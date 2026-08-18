@@ -22,7 +22,8 @@ export default function Login() {
             loginUser({
                 token: res.data.token,
                 username: res.data.username,
-                role: res.data.role
+                role: res.data.role,
+                permissions: res.data.permissions
             });
             navigate("/");
         } catch (err) {
