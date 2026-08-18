@@ -41,16 +41,25 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         username = jwtUtils.extractUsername(jwt);
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+            // KHÔNG GỌI DATABASE NỮA! Lấy Session vòng trong
+            jakarta.servlet.http.HttpSession session = request.getSession(false);
+            if (session != null) {
+                @SuppressWarnings("unchecked")
+                java.util.List<String> permissions = (java.util.List<String>) session.getAttribute("permissions");
+                
+                if (permissions != null) {
+                    java.util.List<org.springframework.security.core.GrantedAuthority> authorities = permissions.stream()
+                            .map(org.springframework.security.core.authority.SimpleGrantedAuthority::new)
+                            .collect(java.util.stream.Collectors.toList());
 
-            if (jwtUtils.isTokenValid(jwt, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            username,
+                            null,
+                            authorities
+                    );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
             }
         }
         filterChain.doFilter(request, response);

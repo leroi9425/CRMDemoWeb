@@ -42,19 +42,15 @@ public class JwtUtils {
     }
 
     public String generateToken(UserDetails userDetails) {
-        // 1. Tạo một cái giỏ (Map) để đựng thông tin
         java.util.Map<String, Object> extraClaims = new java.util.HashMap<>();
         
-        // 2. Ép kiểu UserDetails về Entity User của bạn để lôi cái Nhóm Quyền (Role) ra
+        // Chỉ lưu Role vào JWT, không lưu Permissions
         if (userDetails instanceof com.crm.BackendCrm.entity.User) {
             com.crm.BackendCrm.entity.User user = (com.crm.BackendCrm.entity.User) userDetails;
-            
-            // Giả sử 1 User có 1 Role chính, ta móc tên Role đó ra (VD: "ADMIN")
             String roleName = user.getRoles().stream()
                     .findFirst()
                     .map(com.crm.BackendCrm.entity.Role::getName)
                     .orElse("USER");
-            
             // 3. CHỈ NHÉT ĐÚNG CÁI TÊN ROLE ĐÓ VÀO JWT (Tuyệt đối không nhét Permission nữa)
             extraClaims.put("role", roleName);
         }

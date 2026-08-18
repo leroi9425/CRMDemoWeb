@@ -27,18 +27,35 @@ public class AuthController {
     private final UserRepository userRepository;
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
-        authenticationManager.authenticate(
+    public ResponseEntity<AuthResponse> login(
+            @RequestBody AuthRequest request, 
+            jakarta.servlet.http.HttpServletRequest httpRequest
+    ) {
+        org.springframework.security.core.Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.username(), request.password())
         );
         
+        // Đăng ký user vào luồng chạy hiện tại
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(authentication);
+
         final UserDetails userDetails = userDetailsService.loadUserByUsername(request.username());
         final String jwt = jwtUtils.generateToken(userDetails);
+        
+        // TRÍCH XUẤT 500 PERMISSIONS TỪ USER
+        java.util.List<String> permissions = userDetails.getAuthorities().stream()
+                .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+                .collect(java.util.stream.Collectors.toList());
+                
+        // TẠO SESSION VÀ CẤT PERMISSIONS VÀO ĐÓ
+        jakarta.servlet.http.HttpSession session = httpRequest.getSession(true);
+        session.setAttribute("permissions", permissions);
         
         User user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         String rolesStr = user.getRoles().stream().map(com.crm.BackendCrm.entity.Role::getName).collect(java.util.stream.Collectors.joining(","));
-        return ResponseEntity.ok(new AuthResponse(jwt, user.getUsername(), rolesStr));
+        
+        // TRẢ VỀ JSON CÓ CẢ TOKEN VÀ MẢNG PERMISSIONS CHO REACT
+        return ResponseEntity.ok(new AuthResponse(jwt, user.getUsername(), rolesStr, permissions));
     }
 }

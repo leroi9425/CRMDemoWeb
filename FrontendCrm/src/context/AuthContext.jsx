@@ -17,15 +17,15 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const storedToken = localStorage.getItem("token");
         const storedUser = localStorage.getItem("user");
-        const storedRole = localStorage.getItem("role"); // raw string like "ADMIN"
+        const storedRole = localStorage.getItem("role");
+        const storedPermissions = localStorage.getItem("permissions");
         
         if (storedToken && storedUser) {
-            const decoded = parseJwt(storedToken);
             setAuth({
                 token: storedToken,
                 username: storedUser,
                 role: storedRole,
-                permissions: decoded?.authorities || []
+                permissions: storedPermissions ? JSON.parse(storedPermissions) : []
             });
         }
         setLoading(false);
@@ -36,11 +36,13 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem("user", data.username);
         localStorage.setItem("role", data.role);
         
-        const decoded = parseJwt(data.token);
+        // Nhận mảng permissions từ cục JSON response và lưu dạng chuỗi
+        const perms = data.permissions || [];
+        localStorage.setItem("permissions", JSON.stringify(perms));
         
         setAuth({
             ...data,
-            permissions: decoded?.authorities || []
+            permissions: perms
         });
     };
 
@@ -48,6 +50,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         localStorage.removeItem("role");
+        localStorage.removeItem("permissions");
         setAuth(null);
     };
 
