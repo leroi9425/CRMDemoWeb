@@ -87,10 +87,10 @@
 			<scope>test</scope>
 		</dependency>
 		<!-- Thư viện để kết nối Redis -->
-		<dependency>
+		<!-- <dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-redis</artifactId>
-		</dependency>
+		</dependency> -->
 		<!-- Thư viện để kích hoạt các lá bùa Cacheable -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
