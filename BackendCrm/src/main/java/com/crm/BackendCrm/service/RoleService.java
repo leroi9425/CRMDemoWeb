@@ -33,9 +33,24 @@ public class RoleService {
                 .collect(Collectors.toList());
     }
 
+    // Phục vụ cho JwtAuthFilter check quyền siêu tốc
+    @Cacheable(value = "rolePermsByName", key = "#roleName")
+    public List<String> getPermissionNamesByRoleName(String roleName) {
+        Role role = roleRepository.findAll().stream()
+                .filter(r -> r.getName().equals(roleName))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Role: " + roleName));
+        return role.getPermissions().stream()
+                .map(Permission::getName)
+                .collect(Collectors.toList());
+    }
+
     // Cập nhật lại toàn bộ quyền cho Role khi Admin ấn Lưu
     @Transactional
-    @CacheEvict(value = "rolePermissions", key = "#roleId")
+    @org.springframework.cache.annotation.Caching(evict = {
+        @CacheEvict(value = "rolePermissions", key = "#roleId"),
+        @CacheEvict(value = "rolePermsByName", allEntries = true)
+    })
     public void assignPermissionsToRole(Long roleId, RolePermissionRequestDTO dto) {
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Role với ID: " + roleId));

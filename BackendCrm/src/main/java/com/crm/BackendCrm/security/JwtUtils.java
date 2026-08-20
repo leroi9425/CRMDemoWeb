@@ -18,7 +18,7 @@ public class JwtUtils {
 
     // Should be injected from application.properties in a real app
     private final String SECRET_KEY = "super_secret_key_crm_backend_lite_app_which_is_long_enough";
-    private final long JWT_EXPIRATION = 86400000; // 1 day in ms
+    private final long JWT_EXPIRATION = 900000; // 15 phut (900000 ms)
 
     private Key getSignInKey() {
         return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
@@ -26,6 +26,10 @@ public class JwtUtils {
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    public String extractRole(String token) {
+        return extractClaim(token, claims -> claims.get("role", String.class));
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {

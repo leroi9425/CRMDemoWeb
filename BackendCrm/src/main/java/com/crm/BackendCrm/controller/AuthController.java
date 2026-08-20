@@ -42,18 +42,10 @@ public class AuthController {
         final UserDetails userDetails = userDetailsService.loadUserByUsername(request.username());
         final String jwt = jwtUtils.generateToken(userDetails);
         
-        // TRÍCH XUẤT 500 PERMISSIONS TỪ USER
         java.util.List<String> permissions = userDetails.getAuthorities().stream()
                 .map(org.springframework.security.core.GrantedAuthority::getAuthority)
                 .collect(java.util.stream.Collectors.toList());
-                
-        // TẠO SESSION VÀ CẤT PERMISSIONS VÀO ĐÓ
-        jakarta.servlet.http.HttpSession session = httpRequest.getSession(true);
-        session.setAttribute("permissions", permissions);
-        
-        // Báo cáo cho Sổ cái biết để ghi danh!
-        // activeSessionManager.registerSession(request.username(), session);
-        
+
         User user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
