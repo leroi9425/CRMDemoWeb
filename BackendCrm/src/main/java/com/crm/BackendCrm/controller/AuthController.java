@@ -25,6 +25,7 @@ public class AuthController {
     private final UserDetailsService userDetailsService;
     private final JwtUtils jwtUtils;
     private final UserRepository userRepository;
+//     private final com.crm.BackendCrm.security.ActiveSessionManager activeSessionManager;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(
@@ -49,6 +50,9 @@ public class AuthController {
         // TẠO SESSION VÀ CẤT PERMISSIONS VÀO ĐÓ
         jakarta.servlet.http.HttpSession session = httpRequest.getSession(true);
         session.setAttribute("permissions", permissions);
+        
+        // Báo cáo cho Sổ cái biết để ghi danh!
+        // activeSessionManager.registerSession(request.username(), session);
         
         User user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));

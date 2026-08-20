@@ -24,10 +24,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(
-            @NonNull HttpServletRequest request,
-            @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain) throws ServletException, IOException {
-
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String username;
@@ -37,8 +36,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        jwt = authHeader.substring(7);
-        username = jwtUtils.extractUsername(jwt);
+        jwt = authHeader.substring(7); // cắt 7 ký tự đầu tiên của chuỗi "Bearer " để lấy token
+        username = jwtUtils.extractUsername(jwt);  // lấy username từ token
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             // KHÔNG GỌI DATABASE NỮA! Lấy Session vòng trong
@@ -48,6 +47,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 java.util.List<String> permissions = (java.util.List<String>) session.getAttribute("permissions");
                 
                 if (permissions != null) {
+                    // biển permission thành các mảng thẩm quyền của Spring Security
                     java.util.List<org.springframework.security.core.GrantedAuthority> authorities = permissions.stream()
                             .map(org.springframework.security.core.authority.SimpleGrantedAuthority::new)
                             .collect(java.util.stream.Collectors.toList());

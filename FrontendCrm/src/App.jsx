@@ -5,31 +5,39 @@ import CustomerView from "./components/CustomerView";
 import UserView from "./components/UserView";
 import Login from "./components/Login";
 
+import RoleManagerTab from "./components/RoleManagerTab";
+
 function MainLayout() {
   const [activeTab, setActiveTab] = useState("customers");
   const { auth, logoutUser } = useAuth();
 
   return (
-    <div className="text-slate-800 antialiased min-h-screen flex flex-col">
+    <div className="text-slate-800 antialiased min-h-screen flex flex-col bg-slate-50">
       <nav className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <i className="fa-solid fa-users text-primary text-2xl mr-3"></i>
+              <i className="fa-solid fa-users text-blue-600 text-2xl mr-3"></i>
               <span className="font-bold text-xl tracking-tight text-slate-900">CRM Lite</span>
             </div>
             
             <div className="flex items-center h-full space-x-8">
               <button 
                 onClick={() => setActiveTab("customers")}
-                className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'customers' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+                className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'customers' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
               >
                 Khách hàng
+              </button>
+              <button 
+                onClick={() => setActiveTab("roles")}
+                className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'roles' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+              >
+                Nhóm Quyền
               </button>
               {auth?.permissions?.includes("QUAN_LY_USER") && (
                 <button 
                   onClick={() => setActiveTab("users")}
-                  className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'users' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+                  className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'users' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
                 >
                   Người dùng (System)
                 </button>
@@ -38,7 +46,7 @@ function MainLayout() {
 
             <div className="flex items-center space-x-4">
                 <span className="text-sm font-medium text-slate-600">Xin chào, {auth?.username}</span>
-                <button onClick={logoutUser} className="text-sm font-medium text-danger hover:text-red-700 transition-colors">
+                <button onClick={logoutUser} className="text-sm font-medium text-red-500 hover:text-red-700 transition-colors">
                     Đăng xuất
                 </button>
             </div>
@@ -47,6 +55,7 @@ function MainLayout() {
       </nav>
 
       {activeTab === "customers" && <CustomerView />}
+      {activeTab === "roles" && <RoleManagerTab />}
       {activeTab === "users" && auth?.permissions?.includes("QUAN_LY_USER") && <UserView />}
     </div>
   );

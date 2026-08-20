@@ -36,16 +36,17 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        System.out.println("====== CẤU HÌNH Cho Security ======");
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(AbstractHttpConfigurer::disable)    // tắt csrf bỏ qua csrf token
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))  // cấu hình cors để cho phép các domain khác nhau truy cập vào API
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .anyRequest().authenticated()
-            )
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-            .authenticationProvider(authenticationProvider())
+            )  // chặn quyền tất cả các request khác, request auth thì ai cũng vào đc
+            .authenticationProvider(authenticationProvider()) // cấu hình authentication provider để xác thực người dùng
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            // 
 
         return http.build();
     }
