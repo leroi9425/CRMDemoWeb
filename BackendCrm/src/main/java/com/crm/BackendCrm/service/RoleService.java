@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import com.crm.BackendCrm.dto.RoleDTO;
 
 import java.util.HashSet;
 import java.util.List;
@@ -73,32 +74,32 @@ public class RoleService {
         // bạn sẽ phải gọi Redis xóa Cache của tất cả User thuộc Role này ở đây!
     }
 
-    public List<com.crm.BackendCrm.dto.RoleDTO> getAllRoles() {
+    public List<RoleDTO> getAllRoles() {
         return roleRepository.findAll().stream()
-                .map(r -> new com.crm.BackendCrm.dto.RoleDTO(r.getId(), r.getName(), r.getDescription()))
+                .map(r -> new RoleDTO(r.getId(), r.getName(), r.getDescription()))
                 .collect(Collectors.toList());
     }
 
-    public com.crm.BackendCrm.dto.RoleDTO getRoleById(Long id) {
+    public RoleDTO getRoleById(Long id) {
         Role r = roleRepository.findById(id).orElseThrow(() -> new RuntimeException("Role not found"));
-        return new com.crm.BackendCrm.dto.RoleDTO(r.getId(), r.getName(), r.getDescription());
+        return new RoleDTO(r.getId(), r.getName(), r.getDescription());
     }
 
     @Transactional
-    public com.crm.BackendCrm.dto.RoleDTO createRole(com.crm.BackendCrm.dto.RoleDTO dto) {
+    public RoleDTO createRole(RoleDTO dto) {
         Role role = new Role();
         role.setName(dto.name());
         role.setDescription(dto.description());
         role = roleRepository.save(role);
-        return new com.crm.BackendCrm.dto.RoleDTO(role.getId(), role.getName(), role.getDescription());
+        return new RoleDTO(role.getId(), role.getName(), role.getDescription());
     }
 
     @Transactional
-    public com.crm.BackendCrm.dto.RoleDTO updateRole(Long id, com.crm.BackendCrm.dto.RoleDTO dto) {
+    public RoleDTO updateRole(Long id, RoleDTO dto) {
         Role role = roleRepository.findById(id).orElseThrow(() -> new RuntimeException("Role not found"));
         role.setName(dto.name());
         role.setDescription(dto.description());
         role = roleRepository.save(role);
-        return new com.crm.BackendCrm.dto.RoleDTO(role.getId(), role.getName(), role.getDescription());
+        return new RoleDTO(role.getId(), role.getName(), role.getDescription());
     }
 }
