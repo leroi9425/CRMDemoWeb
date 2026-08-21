@@ -9,7 +9,7 @@ export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const { loginUser } = useAuth();
+    const { storeData } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -18,8 +18,8 @@ export default function Login() {
         setLoading(true);
 
         try {
-            const res = await login({ username, password });
-            loginUser({
+            const res = await login({ username, password });  // đợi dữ liệu đổ vào res
+            storeData({                                       // hàm lưu vào local storage
                 token: res.data.token,
                 username: res.data.username,
                 role: res.data.role,

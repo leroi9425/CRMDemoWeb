@@ -84,6 +84,7 @@ export default function CustomerView() {
             fetchCustomers();
         } catch (error) {
             showToast("Lỗi khi xóa", "danger");
+            // set lại local storage ở đoạn này cho nét
         }
     };
 
