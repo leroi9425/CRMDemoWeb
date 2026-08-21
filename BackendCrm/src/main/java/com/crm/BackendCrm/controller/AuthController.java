@@ -15,6 +15,16 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import java.util.stream.Collectors;
+import org.springframework.security.core.GrantedAuthority;
+import com.crm.BackendCrm.entity.Role;
+
+import java.util.List;
+
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -29,29 +39,41 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(
-            @RequestBody AuthRequest request, 
-            jakarta.servlet.http.HttpServletRequest httpRequest
+            @RequestBody AuthRequest request
     ) {
-        org.springframework.security.core.Authentication authentication = authenticationManager.authenticate(
+        Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.username(), request.password())
         );
         
         // Đăng ký user vào luồng chạy hiện tại
-        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(authentication);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
         final UserDetails userDetails = userDetailsService.loadUserByUsername(request.username());
         final String jwt = jwtUtils.generateToken(userDetails);
         
-        java.util.List<String> permissions = userDetails.getAuthorities().stream()
-                .map(org.springframework.security.core.GrantedAuthority::getAuthority)
-                .collect(java.util.stream.Collectors.toList());
+        List<String> permissions = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
 
         User user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-        String rolesStr = user.getRoles().stream().map(com.crm.BackendCrm.entity.Role::getName).collect(java.util.stream.Collectors.joining(","));
+        String rolesStr = user.getRoles().stream().map(Role::getName).collect(Collectors.joining(","));
         
         // TRẢ VỀ JSON CÓ CẢ TOKEN VÀ MẢNG PERMISSIONS CHO REACT
         return ResponseEntity.ok(new AuthResponse(jwt, user.getUsername(), rolesStr, permissions));
+    }
+
+    @GetMapping("/me/permissions")
+    public ResponseEntity<List<String>> getMyPermissions(@RequestHeader("Authorization") String authHeader) {
+        String jwt = authHeader.substring(7);
+        String username = jwtUtils.extractUsername(jwt);
+        
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        List<String> permissions = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
+                
+        return ResponseEntity.ok(permissions);
     }
 }

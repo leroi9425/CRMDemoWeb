@@ -39,7 +39,7 @@ public class CustomerController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('THEM_KHACH_HANG')")
+    @PreAuthorize("hasAuthority('SUA_KHACH_HANG')")
     public CustomerResponseDTO update(@PathVariable Long id, @Valid @RequestBody CustomerRequestDTO dto) {
         return customerService.update(id, dto);
     }
