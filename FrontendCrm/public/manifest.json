@@ -1,7 +1,9 @@
 {
+  "id": "/",
   "name": "CRM Lite Manual",
   "short_name": "CRM Manual",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "theme_color": "#ff9800",
   "background_color": "#ffffff",
