@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-    baseURL: "http://localhost:8080/api",
+    baseURL: "/api",
     withCredentials: true,
 });
 
@@ -11,6 +11,10 @@ axiosInstance.interceptors.request.use(
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
+        
+        // Bỏ qua trang cảnh báo của ngrok khi điện thoại gọi API
+        config.headers["ngrok-skip-browser-warning"] = "69420";
+        
         return config;
     },
     (error) => {
@@ -34,7 +38,7 @@ axiosInstance.interceptors.response.use(
             try {
                 const token = localStorage.getItem("token");
                 // Tự động gọi API lấy quyền mới nhất
-                const res = await axios.get("http://localhost:8080/api/auth/me/permissions", {
+                const res = await axios.get(`/api/auth/me/permissions`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 

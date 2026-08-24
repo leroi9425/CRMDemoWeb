@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import com.crm.BackendCrm.dto.RoleDTO;
 
 import java.util.HashSet;
@@ -48,7 +49,7 @@ public class RoleService {
 
     // Cập nhật lại toàn bộ quyền cho Role khi Admin ấn Lưu
     @Transactional
-    @org.springframework.cache.annotation.Caching(evict = {
+    @Caching(evict = {
         @CacheEvict(value = "rolePermissions", key = "#roleId"),
         @CacheEvict(value = "rolePermsByName", allEntries = true)
     })

@@ -85,6 +85,7 @@ export default function CustomerView() {
         } catch (error) {
             showToast("Lỗi khi xóa", "danger");
             // set lại local storage ở đoạn này cho nét
+            await getData
         }
     };
 
