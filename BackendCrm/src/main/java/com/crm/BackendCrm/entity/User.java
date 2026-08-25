@@ -7,9 +7,9 @@ import java.time.LocalDateTime;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Collection;
-import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -24,11 +24,11 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     private String username;
 
-    @Column(nullable = false, unique = true)
-    private String email;
-
     @Column(nullable = false)
     private String password;
+
+    @Column(nullable = false, unique = true)
+    private String email;
 
     private String fullName;
 
@@ -41,12 +41,18 @@ public class User implements UserDetails {
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
-    private java.util.Set<Role> roles = new java.util.HashSet<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
+
+
+    private Set<Role> roles = new HashSet<>();
     
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // Tạo một cái giỏ trống để đựng quyền
-        java.util.Set<GrantedAuthority> authorities = new java.util.HashSet<>();
+        Set<GrantedAuthority> authorities = new HashSet<>();
         
         // Vòng lặp 1: Đi qua từng Nhóm quyền (Role) của User (Ví dụ: Kế toán, Marketing)
         for (Role role : roles) {
