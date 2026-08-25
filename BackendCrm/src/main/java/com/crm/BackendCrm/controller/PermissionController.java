@@ -10,8 +10,6 @@ import org.springframework.http.ResponseEntity;
 import jakarta.validation.Valid;
 
 import com.crm.BackendCrm.service.PermissionService;
-import com.crm.BackendCrm.dto.AuthRequest;
-import com.crm.BackendCrm.dto.AuthResponse;
 import com.crm.BackendCrm.dto.PermissionRequestDTO;
 import com.crm.BackendCrm.dto.PermissionResponseDTO;
 import com.crm.BackendCrm.service.RoleService;
@@ -26,7 +24,6 @@ import java.util.List;
 public class PermissionController {
     
     private final PermissionService permissionService;
-    private final RoleService roleService;
 
     // API 1: Trả về JSON cây quyền cho Frontend
     @GetMapping("/tree")

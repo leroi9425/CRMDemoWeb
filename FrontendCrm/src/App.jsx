@@ -4,6 +4,7 @@ import { useAuth } from "./context/AuthContext";
 import CustomerView from "./components/CustomerView";
 import UserView from "./components/UserView";
 import Login from "./components/Login";
+import ProductView from "./components/ProductView";
 
 import RoleManagerTab from "./components/RoleManagerTab";
 
@@ -27,6 +28,12 @@ function MainLayout() {
                 className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'customers' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
               >
                 Khách hàng
+              </button>
+              <button 
+                onClick={() => setActiveTab("products")}
+                className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'products' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+              >
+                Sản phẩm
               </button>
               <button 
                 onClick={() => setActiveTab("roles")}
@@ -55,6 +62,7 @@ function MainLayout() {
       </nav>
 
       {activeTab === "customers" && <CustomerView />}
+      {activeTab === "products" && <ProductView />}
       {activeTab === "roles" && <RoleManagerTab />}
       {activeTab === "users" && auth?.permissions?.includes("QUAN_LY_USER") && <UserView />}
     </div>

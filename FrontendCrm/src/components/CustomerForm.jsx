@@ -1,53 +1,52 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createCustomer, updateCustomer } from "../api/customerApi";
 
 export default function CustomerForm({ editingCustomer, onSaveSuccess, onCancel }) {
-  const [formData, setFormData] = useState({
-    name: "",
-    phoneNumber: "",
-    email: "",
-    dateOfBirth: "",
-    location: "",
-    gender: true,
-  });
-
+  // BƯỚC 1: Thay thế state formData bằng useRef để quản lý form
+  const formRef = useRef(null);
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // BƯỚC 2: Thay đổi useEffect để đổ dữ liệu trực tiếp vào DOM (chỉ chạy 1 lần khi đổi khách hàng)
   useEffect(() => {
-    if (editingCustomer) {
-      setFormData({
-        name: editingCustomer.name || "",
-        phoneNumber: editingCustomer.phoneNumber || "",
-        email: editingCustomer.email || "",
-        dateOfBirth: editingCustomer.dateOfBirth || "",
-        location: editingCustomer.location || "",
-        gender: editingCustomer.gender !== undefined ? editingCustomer.gender : true,
-      });
-    } else {
-      setFormData({ name: "", phoneNumber: "", email: "", dateOfBirth: "", location: "", gender: true });
+    if (formRef.current) {
+      if (editingCustomer) {
+        formRef.current.elements.name.value = editingCustomer.name || "";
+        formRef.current.elements.phoneNumber.value = editingCustomer.phoneNumber || "";
+        formRef.current.elements.email.value = editingCustomer.email || "";
+        formRef.current.elements.dateOfBirth.value = editingCustomer.dateOfBirth || "";
+        formRef.current.elements.location.value = editingCustomer.location || "";
+        // Chuyển boolean thành string "true"/"false" cho thẻ select
+        formRef.current.elements.gender.value = editingCustomer.gender !== undefined ? String(editingCustomer.gender) : "true";
+      } else {
+        formRef.current.reset(); // Nếu thêm mới thì xóa trắng form
+      }
     }
   }, [editingCustomer]);
 
-  const handleChange = (e) => {
-    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    const name = e.target.name;
-    if (name === "gender") {
-        setFormData({ ...formData, [name]: e.target.value === "true" });
-    } else {
-        setFormData({ ...formData, [name]: value });
-    }
-  };
-
+  // BƯỚC 3: Sửa hàm Submit để gom tất cả file/trường dữ liệu đi một lần duy nhất
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    // Thu thập dữ liệu từ form giống cơ chế gom Control trong C#
+    const data = new FormData(formRef.current);
+    const payload = {
+      name: data.get("name"),
+      phoneNumber: data.get("phoneNumber"),
+      email: data.get("email"),
+      dateOfBirth: data.get("dateOfBirth"),
+      location: data.get("location"),
+      gender: data.get("gender") === "true", // Ép chuỗi "true" thành kiểu boolean true
+    };
+
     try {
       if (editingCustomer) {
-        await updateCustomer(editingCustomer.id, formData);
+        await updateCustomer(editingCustomer.id, payload);
       } else {
-        await createCustomer(formData);
+        await createCustomer(payload);
       }
       onSaveSuccess();
     } catch (err) {
@@ -62,30 +61,17 @@ export default function CustomerForm({ editingCustomer, onSaveSuccess, onCancel 
     <div style={{ marginBottom: "20px", padding: "20px", border: "1px solid #ccc", borderRadius: "8px" }}>
       <h2>{editingCustomer ? "Sửa khách hàng" : "Thêm khách hàng mới"}</h2>
       {error && <p style={{ color: "red" }}>{error}</p>}
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "400px" }}>
+      
+      {/* Gắn ref vào thẻ form và xóa bỏ toàn bộ thuộc tính value, onChange ở các ô input bên dưới */}
+      <form ref={formRef} onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "400px" }}>
         <label>
           Họ Tên:
-          <input type="text" name="name" value={formData.name} onChange={handleChange} required style={{ width: "100%" }} />
+          <input type="text" name="nameProduct" required style={{ width: "100%" }} />
         </label>
-        <label>
-          SĐT:
-          <input type="text" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} required style={{ width: "100%" }} />
-        </label>
-        <label>
-          Email:
-          <input type="email" name="email" value={formData.email} onChange={handleChange} required style={{ width: "100%" }} />
-        </label>
-        <label>
-          Ngày sinh:
-          <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} required style={{ width: "100%" }} />
-        </label>
-        <label>
-          Địa chỉ:
-          <input type="text" name="location" value={formData.location} onChange={handleChange} required style={{ width: "100%" }} />
-        </label>
+        <label></label>
         <label>
           Giới tính:
-          <select name="gender" value={formData.gender} onChange={handleChange} style={{ width: "100%", padding: "4px" }}>
+          <select name="gender" style={{ width: "100%", padding: "4px" }}>
             <option value="true">Nam</option>
             <option value="false">Nữ</option>
           </select>
