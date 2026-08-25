@@ -9,7 +9,6 @@ import com.crm.BackendCrm.service.ProductService;
 
 import jakarta.validation.Valid;
 
-import com.crm.BackendCrm.dto.CustomerRequestDTO;
 import com.crm.BackendCrm.dto.ProductResponseDTO;
 import com.crm.BackendCrm.dto.ProductRequestDTO;
 

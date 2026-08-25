@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getCustomers, createCustomer, updateCustomer, deleteCustomer } from "../api/customerApi";
+import { getProducts, createProduct, updateProduct, deleteProduct } from "../api/productApi";
 import { useAuth } from "../context/AuthContext";
 
 export default function ProductView() {
@@ -13,14 +13,16 @@ export default function ProductView() {
     const [toasts, setToasts] = useState([]);
 
     const [formData, setFormData] = useState({
-        nameProduct: "", detail: ""
+        productName: "", detail: ""
     });
 
     const fetchProducts = async () => {
         try {
             const res = await getProducts();
+            console.log("Fetched products:", res.data);
             setProducts(res.data);
         } catch (error) {
+            console.log("Lỗi, chuẩn bị vào toast", error);
             showToast("Lỗi khi tải danh sách sản phẩm", "danger");
         }
     };
@@ -35,17 +37,18 @@ export default function ProductView() {
         setTimeout(() => {
             setToasts(prev => prev.filter(t => t.id !== id));
         }, 3000);
+        console.log("Toast product added:", { id, message, type });
     };
 
     const openModal = (product = null) => {
         setEditingProduct(product);
         if (product) {
             setFormData({
-                nameProduct: product.nameProduct || "",
+                productName: product.productName || "",
                 detail: product.detail || ""
             });
         } else {
-            setFormData({ nameProduct: "", detail: "" });
+            setFormData({ productName: "", detail: "" });
         }
         setIsModalOpen(true);
     };
@@ -59,21 +62,26 @@ export default function ProductView() {
         e.preventDefault();
         try {
             if (editingProduct) {
+                console.log("id va form cua thang update: ", editingProduct.id, formData);
                 await updateProduct(editingProduct.id, formData);
                 showToast("Đã cập nhật thông tin thành công!", "success");
             } else {
+                console.log("form cua thang create: ", formData);
                 await createProduct(formData);
+                console.log("Đã thêm sản phẩm mới!");
                 showToast("Đã thêm sản phẩm mới!", "success");
             }
             closeModal();
             fetchProducts();
         } catch (err) {
+            console.error("Lỗi khi lưu sản phẩm", err);
             showToast(err.response?.data?.message || "Đã xảy ra lỗi", "danger");
         }
     };
 
     const confirmDelete = async () => {
         try {
+            console.log("id cua thang delete: ", deletingId);
             await deleteProduct(deletingId);
             showToast("Đã xóa sản phẩm.", "danger");
             setIsDeleteModalOpen(false);
@@ -86,7 +94,7 @@ export default function ProductView() {
     };
 
     const filteredProducts = products.filter(p => 
-        p.nameProduct?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        p.productName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
         p.detail?.includes(searchTerm)
     );
 
@@ -129,6 +137,7 @@ export default function ProductView() {
                                 <th className="px-6 py-4">ID</th>
                                 <th className="px-6 py-4">Tên Sản phẩm</th>
                                 <th className="px-6 py-4">Mô tả</th>
+                                <th className="px-6 py-4">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 text-sm">
@@ -137,22 +146,17 @@ export default function ProductView() {
                                     <td className="px-6 py-4 whitespace-nowrap text-slate-500 font-mono text-xs">#{product.id}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
-                                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
-                                                {getInitials(product.nameProduct)}
-                                            </div>
                                             <div className="ml-4">
-                                                <div className="font-medium text-slate-900 group-hover:text-primary transition-colors">{product.nameProduct}</div>
-                                                <div className="text-slate-500 text-xs">{product.detail}</div>
+                                                <div className="text-slate-900 text-xs">{product.productName}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-slate-700"><i className="fa-solid fa-phone text-slate-400 mr-2 w-4"></i>{customer.phoneNumber}</div>
-                                        <div className="text-slate-500 text-xs mt-1"><i className="fa-solid fa-envelope text-slate-400 mr-2 w-4"></i>{customer.email || 'N/A'}</div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-slate-700"><i className="fa-solid fa-calendar text-slate-400 mr-2 w-4"></i>{customer.dateOfBirth}</div>
-                                        <div className="text-slate-500 text-xs mt-1"><i className="fa-solid fa-location-dot text-slate-400 mr-2 w-4"></i>{customer.location}</div>
+                                        <div className="flex items-center">
+                                            <div className="ml-4">
+                                                <div className="text-slate-900 text-xs">{product.detail}</div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right font-medium">
                                         <div className="flex justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -173,7 +177,7 @@ export default function ProductView() {
                         </tbody>
                     </table>
                     
-                    {filteredCustomers.length === 0 && (
+                    {filteredProducts.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-16 text-slate-500">
                             <div className="bg-slate-100 p-4 rounded-full mb-4">
                                 <i className="fa-solid fa-folder-open text-3xl text-slate-400"></i>
@@ -200,11 +204,11 @@ export default function ProductView() {
                         <form id="productForm" onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Tên Sản phẩm <span className="text-danger">*</span></label>
-                                <input type="text" required value={formData.nameProduct} onChange={e => setFormData({...formData, nameProduct: e.target.value})} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Tên sản phẩm" />
+                                <input type="text" required value={formData.productName} onChange={e => setFormData({...formData, productName: e.target.value})} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Tên sản phẩm" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Mô tả <span className="text-danger">*</span></label>
-                                <input type="text" required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Mô tả sản phẩm" />
+                                <input type="text" required value={formData.detail} onChange={e => setFormData({...formData, detail: e.target.value})} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Mô tả sản phẩm" />
                             </div>
                         </form>
                     </div>

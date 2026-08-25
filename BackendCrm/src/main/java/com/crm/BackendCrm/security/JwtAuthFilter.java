@@ -48,6 +48,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             if (roleName != null) {
                 // 2. Chọc xuống Redis lấy mảng quyền (Siêu tốc độ)
                 java.util.List<String> permissions = roleService.getPermissionNamesByRoleName(roleName);
+                for (String perm : permissions) {
+                    System.out.println("Permission for role " + roleName + ": " + perm);
+                }
                 // 3. Biến thành mảng quyền của Spring Security
                 java.util.List<org.springframework.security.core.GrantedAuthority> authorities = permissions.stream()
                         .map(org.springframework.security.core.authority.SimpleGrantedAuthority::new)
