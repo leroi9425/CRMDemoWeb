@@ -10,9 +10,8 @@ import org.springframework.http.ResponseEntity;
 import jakarta.validation.Valid;
 
 import com.crm.BackendCrm.service.PermissionService;
-import com.crm.BackendCrm.dto.PermissionRequestDTO;
-import com.crm.BackendCrm.dto.PermissionResponseDTO;
-import com.crm.BackendCrm.service.RoleService;
+import com.crm.BackendCrm.dto.Request.PermissionRequestDTO;
+import com.crm.BackendCrm.dto.Response.PermissionResponseDTO;
 
 import lombok.RequiredArgsConstructor;
 import java.util.List;

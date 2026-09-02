@@ -1,4 +1,4 @@
-package com.crm.BackendCrm.dto;
+package com.crm.BackendCrm.dto.Request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -10,5 +10,7 @@ public record CustomerRequestDTO(
     @NotBlank @Email String email,
     @NotBlank String dateOfBirth,
     @NotBlank String location,
-    @NotNull Boolean gender
+    @NotNull Boolean gender,
+    @NotNull Long companyId,
+    @NotNull Long userId
 ) {}

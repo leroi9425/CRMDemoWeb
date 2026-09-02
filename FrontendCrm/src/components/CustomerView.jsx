@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { getCustomers, createCustomer, updateCustomer, deleteCustomer } from "../api/customerApi";
 import { useAuth } from "../context/AuthContext";
+import ExcelInOutPut from "./ExcelInOutPut";
+
 
 export default function CustomerView() {
     const { auth } = useAuth();
@@ -13,7 +15,7 @@ export default function CustomerView() {
     const [toasts, setToasts] = useState([]);
 
     const [formData, setFormData] = useState({
-        name: "", email: "", phoneNumber: "", dateOfBirth: "", location: "", gender: true
+        name: "", email: "", phoneNumber: "", dateOfBirth: "", location: "", gender: true, companyId: "", userId: ""
     });
 
     const fetchCustomers = async () => {
@@ -46,10 +48,12 @@ export default function CustomerView() {
                 phoneNumber: customer.phoneNumber || "",
                 dateOfBirth: customer.dateOfBirth || "",
                 location: customer.location || "",
-                gender: customer.gender
+                gender: customer.gender,
+                companyId: customer.companyId || "",
+                userId: customer.userId || ""
             });
         } else {
-            setFormData({ name: "", email: "", phoneNumber: "", dateOfBirth: "", location: "", gender: true });
+            setFormData({ name: "", email: "", phoneNumber: "", dateOfBirth: "", location: "", gender: true, companyId: "", userId: "" });
         }
         setIsModalOpen(true);
     };
@@ -66,6 +70,7 @@ export default function CustomerView() {
                 await updateCustomer(editingCustomer.id, formData);
                 showToast("Đã cập nhật thông tin thành công!", "success");
             } else {
+                console.log(formData);
                 await createCustomer(formData);
                 showToast("Đã thêm khách hàng mới!", "success");
             }
@@ -125,7 +130,8 @@ export default function CustomerView() {
                     )}
                 </div>
             </div>
-
+            
+                <ExcelInOutPut/>
             <div className="bg-white shadow-sm rounded-xl border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full whitespace-nowrap">
@@ -231,6 +237,14 @@ export default function CustomerView() {
                                     <option value="true">Nam</option>
                                     <option value="false">Nữ</option>
                                 </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Company ID <span className="text-danger">*</span></label>
+                                <input type="number" required value={formData.companyId} onChange={e => setFormData({...formData, companyId: e.target.value})} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Nhập ID công ty" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">User ID <span className="text-danger">*</span></label>
+                                <input type="number" required value={formData.userId} onChange={e => setFormData({...formData, userId: e.target.value})} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Nhập ID nhân viên phụ trách" />
                             </div>
                         </form>
                     </div>

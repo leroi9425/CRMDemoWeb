@@ -35,6 +35,7 @@ axiosInstance.interceptors.response.use(
         }
 
         if (error.response && error.response.status === 403) {
+            console.log("Bi 403 roi nay");
             try {
                 const token = localStorage.getItem("token");
                 // Tự động gọi API lấy quyền mới nhất

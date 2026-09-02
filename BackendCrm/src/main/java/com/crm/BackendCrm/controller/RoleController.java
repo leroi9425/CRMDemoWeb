@@ -1,6 +1,6 @@
 package com.crm.BackendCrm.controller;
 
-import com.crm.BackendCrm.dto.RolePermissionRequestDTO;
+import com.crm.BackendCrm.dto.Request.RolePermissionRequestDTO;
 import com.crm.BackendCrm.service.RoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

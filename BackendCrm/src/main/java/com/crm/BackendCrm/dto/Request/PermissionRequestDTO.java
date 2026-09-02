@@ -1,4 +1,4 @@
-package com.crm.BackendCrm.dto;
+package com.crm.BackendCrm.dto.Request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

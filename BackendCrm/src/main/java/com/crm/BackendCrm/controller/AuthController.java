@@ -1,7 +1,7 @@
 package com.crm.BackendCrm.controller;
 
-import com.crm.BackendCrm.dto.AuthRequest;
-import com.crm.BackendCrm.dto.AuthResponse;
+import com.crm.BackendCrm.dto.Request.AuthRequest;
+import com.crm.BackendCrm.dto.Response.AuthResponse;
 import com.crm.BackendCrm.entity.User;
 import com.crm.BackendCrm.repository.UserRepository;
 import com.crm.BackendCrm.security.JwtUtils;

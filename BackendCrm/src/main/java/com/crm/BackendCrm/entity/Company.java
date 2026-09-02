@@ -2,15 +2,19 @@ package com.crm.BackendCrm.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
+@Getter @Setter 
+@Table(name = "companies")
 public class Company {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,4 +31,7 @@ public class Company {
 
     @OneToMany(mappedBy = "company")
     private Set<User> users = new HashSet<>();
+
+    @OneToMany(mappedBy = "company")
+    private List<Customer> customers;
 }

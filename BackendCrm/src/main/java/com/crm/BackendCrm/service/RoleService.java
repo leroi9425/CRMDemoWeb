@@ -1,6 +1,5 @@
 package com.crm.BackendCrm.service;
 
-import com.crm.BackendCrm.dto.RolePermissionRequestDTO;
 import com.crm.BackendCrm.entity.Permission;
 import com.crm.BackendCrm.entity.Role;
 import com.crm.BackendCrm.repository.PermissionRepository;
@@ -12,6 +11,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import com.crm.BackendCrm.dto.RoleDTO;
+import com.crm.BackendCrm.dto.Request.RolePermissionRequestDTO;
 
 import java.util.HashSet;
 import java.util.List;
@@ -42,9 +42,9 @@ public class RoleService {
                 .filter(r -> r.getName().equals(roleName))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Role: " + roleName));
-        return role.getPermissions().stream()
-                .map(Permission::getName)
+        List<String> listPermission = role.getPermissions().stream().map(Permission::getName)
                 .collect(Collectors.toList());
+        return listPermission;
     }
 
     // Cập nhật lại toàn bộ quyền cho Role khi Admin ấn Lưu

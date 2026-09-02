@@ -1,4 +1,4 @@
-package com.crm.BackendCrm.dto;
+package com.crm.BackendCrm.dto.Response;
 
 import java.util.List;
 import java.io.Serializable;

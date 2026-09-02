@@ -1,4 +1,4 @@
-package com.crm.BackendCrm.dto;
+package com.crm.BackendCrm.dto.Request;
 
 import java.util.List;
 import jakarta.validation.constraints.NotNull;

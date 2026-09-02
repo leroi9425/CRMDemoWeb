@@ -7,13 +7,14 @@ import Login from "./components/Login";
 import ProductView from "./components/ProductView";
 
 import RoleManagerTab from "./components/RoleManagerTab";
+import CompanyView from "./components/CompanyView";
 
 function MainLayout() {
   const [activeTab, setActiveTab] = useState("customers");
   const { auth, logoutUser } = useAuth();
 
   return (
-    <div className="text-slate-800 antialiased min-h-screen flex flex-col bg-slate-50">
+    <div className="text-slate-800 antialiased min-h-screen w-full flex flex-col bg-slate-50">
       <nav className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -23,30 +24,44 @@ function MainLayout() {
             </div>
             
             <div className="flex items-center h-full space-x-8">
-              <button 
+              {auth?.permissions?.includes("QUAN_LY_KHACH_HANG") && (
+                <button 
                 onClick={() => setActiveTab("customers")}
                 className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'customers' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
-              >
-                Khách hàng
-              </button>
-              <button 
+                >
+                  Khách hàng
+                </button>
+              )}
+              {auth?.permissions?.includes("QUAN_LY_SAN_PHAM") && (
+                <button 
                 onClick={() => setActiveTab("products")}
                 className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'products' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
-              >
-                Sản phẩm
-              </button>
-              <button 
+                >
+                  Sản phẩm
+                </button>
+              )}              
+              {auth?.permissions?.includes("QUAN_LY_QUYEN") && (
+                <button
                 onClick={() => setActiveTab("roles")}
                 className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'roles' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
-              >
-                Nhóm Quyền
-              </button>
+                >
+                  Nhóm Quyền
+                </button>
+              )}              
               {auth?.permissions?.includes("QUAN_LY_USER") && (
                 <button 
                   onClick={() => setActiveTab("users")}
                   className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'users' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
                 >
                   Người dùng (System)
+                </button>
+              )}
+              {auth?.permissions?.includes("QUAN_LY_CONG_TY") && (
+                <button 
+                  onClick={() => setActiveTab("companies")}
+                  className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'companies' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+                >
+                  Công ty
                 </button>
               )}
             </div>
@@ -61,10 +76,11 @@ function MainLayout() {
         </div>
       </nav>
 
-      {activeTab === "customers" && <CustomerView />}
-      {activeTab === "products" && <ProductView />}
-      {activeTab === "roles" && <RoleManagerTab />}
+      {activeTab === "customers" && auth?.permissions?.includes("QUAN_LY_KHACH_HANG") && <CustomerView />}
+      {activeTab === "products" && auth?.permissions?.includes("QUAN_LY_SAN_PHAM") && <ProductView />}
+      {activeTab === "roles" && auth?.permissions?.includes("QUAN_LY_QUYEN") && <RoleManagerTab />}
       {activeTab === "users" && auth?.permissions?.includes("QUAN_LY_USER") && <UserView />}
+      {activeTab == "companies" && auth?.permissions?.includes("QUAN_LY_CONG_TY") && <CompanyView />}
     </div>
   );
 }

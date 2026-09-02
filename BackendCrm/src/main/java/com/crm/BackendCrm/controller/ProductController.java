@@ -9,8 +9,8 @@ import com.crm.BackendCrm.service.ProductService;
 
 import jakarta.validation.Valid;
 
-import com.crm.BackendCrm.dto.ProductResponseDTO;
-import com.crm.BackendCrm.dto.ProductRequestDTO;
+import com.crm.BackendCrm.dto.Request.ProductRequestDTO;
+import com.crm.BackendCrm.dto.Response.ProductResponseDTO;
 
 import lombok.RequiredArgsConstructor;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.crm.BackendCrm.dto;
+package com.crm.BackendCrm.dto.Response;
 
 import java.time.LocalDateTime;
 
@@ -10,5 +10,7 @@ public record CustomerResponseDTO(
     String dateOfBirth, 
     String location, 
     boolean gender, 
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+    Long companyId,
+    Long userId
 ) {}
