@@ -5,25 +5,27 @@ import ExcelInOutPut from "./ExcelInOutPut";
 
 
 export default function CustomerView() {
-    const { auth } = useAuth();
     const [customers, setCustomers] = useState([]);
-    const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState(null);
     const [deletingId, setDeletingId] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
     const [toasts, setToasts] = useState([]);
-
     const [currentPage, setCurrentPage] = useState(0);
-    const [totalPage, setTotalPage] = useState(1);
-
+    const [totalPage, setTotalPage] = useState(0);
+    const { auth } = useAuth();
     const [formData, setFormData] = useState({
         name: "", email: "", phoneNumber: "", dateOfBirth: "", location: "", gender: true, companyId: "", userId: ""
     });
+    
+    // State để điều khiển màn hình Import Excel
+    const [isImportMode, setIsImportMode] = useState(false);
 
     const fetchCustomers = async () => {
         try {
             const res = await getCustomersPage(currentPage);
+            console.log(res.data);
             setCustomers(res.data.content);
             setTotalPage(res.data.totalPages);
         } catch (error) {
@@ -57,14 +59,16 @@ export default function CustomerView() {
                 userId: customer.userId || ""
             });
         } else {
-            setFormData({ name: "", email: "", phoneNumber: "", dateOfBirth: "", location: "", gender: true, companyId: "", userId: "" });
+            setFormData({
+                name: "", email: "", phoneNumber: "", dateOfBirth: "", location: "", gender: true, companyId: "", userId: ""
+            });
         }
         setIsModalOpen(true);
     };
 
     const closeModal = () => {
         setIsModalOpen(false);
-        setTimeout(() => setEditingCustomer(null), 300);
+        setEditingCustomer(null);
     };
 
     const handleSubmit = async (e) => {
@@ -93,8 +97,6 @@ export default function CustomerView() {
             fetchCustomers();
         } catch (error) {
             showToast("Lỗi khi xóa", "danger");
-            // set lại local storage ở đoạn này cho nét
-            await getData
         }
     };
 

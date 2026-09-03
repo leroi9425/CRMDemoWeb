@@ -39,7 +39,7 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)    // tắt csrf bỏ qua csrf token
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))  // cấu hình cors để cho phép các domain khác nhau truy cập vào API
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/auth/**", "/error").permitAll()
                 .anyRequest().authenticated()
             )  // chặn quyền tất cả các request khác, request auth thì ai cũng vào đc
             .authenticationProvider(authenticationProvider()) // cấu hình authentication provider để xác thực người dùng

@@ -7,6 +7,7 @@ import com.crm.BackendCrm.entity.User;
 import com.crm.BackendCrm.entity.Company;
 import com.crm.BackendCrm.repository.CompanyRepository;
 import com.crm.BackendCrm.repository.CustomerRepository;
+import com.crm.BackendCrm.repository.CustomerTmpRepository;
 import com.crm.BackendCrm.repository.UserRepository;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -14,21 +15,29 @@ import org.apache.poi.ss.usermodel.DataFormatter;
 
 import lombok.RequiredArgsConstructor;
 
-import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import com.crm.BackendCrm.entity.CustomerTmp;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +45,15 @@ public class CustomerService {
     private final CustomerRepository customerRepository;
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
+    private final CustomerTmpRepository customerTmpRepository;
+    
+    private final int itemPerPage = 5;
+
+    public Page<CustomerResponseDTO> findAllInPage(int index){
+        Pageable pageable = PageRequest.of(index, itemPerPage);
+        Page<Customer> customers = customerRepository.findAll(pageable);
+        return customers.map(this::toDTO);
+    }
 
     public List<CustomerResponseDTO> getAll() { 
         return customerRepository.
@@ -51,49 +69,159 @@ public class CustomerService {
         return toDTO(customer);
     }
 
-    public void saveFileData(InputStream file) throws IOException{
-        Company company = companyRepository.findById((long)1).
+    public void saveFileData(InputStream file, String mappingJson) throws IOException {
+        System.out.println("Bắt đầu quy trình Import bằng Bảng Tạm (Staging Table)...");
+        Company defaultCompany = companyRepository.findById((long)1).
         orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Company not found"));
 
-        User user = userRepository.findById((long)1).
-        orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Company not found"));
+        User defaultUser = userRepository.findById((long)1).
+        orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        // Parse JSON Tọa độ (Index) từ Frontend gửi lên
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Integer> columnIndex = mapper.readValue(mappingJson, new TypeReference<Map<String, Integer>>(){});
 
         Workbook workbook = WorkbookFactory.create(file);
         Sheet sheet = workbook.getSheetAt(0);
 
-        Row headerRow = sheet.getRow(0);
+        // 1. Vòng lặp thứ nhất: Đi săn tất cả những SĐT/Email nào xuất hiện từ 2 lần trở lên
+        Set<String> seenEmails = new HashSet<>();
+        Set<String> duplicateEmails = new HashSet<>();
+        
+        Set<String> seenPhones = new HashSet<>();
+        Set<String> duplicatePhones = new HashSet<>();
 
-        Map<String, Integer> columnIndex = new HashMap<>();
-        for(Cell cell : headerRow){
-            String headerName = cell.getStringCellValue().trim();
-            columnIndex.put(headerName, cell.getColumnIndex()); //ta chuyển đổi tên cột trong file excel sang số index
-            System.out.print("headerName: "+headerName+" index: "+cell.getColumnIndex());
-        }
+        DataFormatter formatter = new DataFormatter();
 
-        System.out.print("column index: "+columnIndex);
         sheet.forEach(row -> {
-            Customer customer = new Customer();
+            if(row.getRowNum() == 0) return;
+            try {
+                if (columnIndex.containsKey("email") && columnIndex.get("email") != null) {
+                    String email = formatter.formatCellValue(row.getCell(columnIndex.get("email")));
+                    if (!email.isEmpty() && !seenEmails.add(email)) {
+                        duplicateEmails.add(email); // Bắt được kẻ trùng lặp!
+                    }
+                }
+                if (columnIndex.containsKey("phoneNumber") && columnIndex.get("phoneNumber") != null) {
+                    String phone = formatter.formatCellValue(row.getCell(columnIndex.get("phoneNumber")));
+                    if (!phone.isEmpty() && !seenPhones.add(phone)) {
+                        duplicatePhones.add(phone); // Bắt được kẻ trùng lặp!
+                    }
+                }
+            } catch (Exception ignored) {}
+        });
 
-            DataFormatter formatter = new DataFormatter();
-            // ...
-            if(row.getRowNum() != 0) {
-                // Dùng formatter.formatCellValue() để bọc lại, nó sẽ tự động lấy mọi thứ biến thành String!
-                customer.setCustomerName(formatter.formatCellValue(row.getCell(columnIndex.get("customerName"))));
-                customer.setPhoneNumber(formatter.formatCellValue(row.getCell(columnIndex.get("phoneNumber"))));
-                customer.setEmail(formatter.formatCellValue(row.getCell(columnIndex.get("email"))));
-                customer.setDateOfBirth(formatter.formatCellValue(row.getCell(columnIndex.get("dateOfBirth"))));
-                customer.setLocation(formatter.formatCellValue(row.getCell(columnIndex.get("location"))));
-                
-                // Riêng giới tính là Boolean thì vẫn giữ nguyên (Miễn là trong Excel ghi TRUE/FALSE)
-                customer.setGender(row.getCell(columnIndex.get("gender")).getBooleanCellValue());
-                
-                customer.setCompany(company);
-                customer.setUser(user);
+        // 2. Vòng lặp thứ hai: Lọc dữ liệu, từ chối CẢ 2 thằng nếu nó nằm trong danh sách đen (duplicate)
+        List<CustomerTmp> tmpList = new ArrayList<>();
+        long importId = System.currentTimeMillis(); 
 
-                System.out.print("customer: "+customer);
-                toDTO(customerRepository.save(customer));
+        sheet.forEach(row -> {
+            if(row.getRowNum() == 0) return;
+            
+            try {
+                String email = "";
+                if (columnIndex.containsKey("email") && columnIndex.get("email") != null) {
+                    email = formatter.formatCellValue(row.getCell(columnIndex.get("email")));
+                }
+                
+                String phone = "";
+                if (columnIndex.containsKey("phoneNumber") && columnIndex.get("phoneNumber") != null) {
+                    phone = formatter.formatCellValue(row.getCell(columnIndex.get("phoneNumber")));
+                }
+
+                // KIỂM TRA QUYẾT ĐỊNH: Có nằm trong danh sách đen không?
+                if (!email.isEmpty() && duplicateEmails.contains(email)) {
+                    System.out.println("Dòng " + row.getRowNum() + " bị loại vì Email này bị phát hiện có clone trong file: " + email);
+                    return; // Vứt! Không lấy thằng nào hết
+                }
+                if (!phone.isEmpty() && duplicatePhones.contains(phone)) {
+                    System.out.println("Dòng " + row.getRowNum() + " bị loại vì SĐT này bị phát hiện có clone trong file: " + phone);
+                    return; // Vứt! Không lấy thằng nào hết
+                }
+
+                // Nếu không trùng, tạo Entity Tmp
+                CustomerTmp tmp = new CustomerTmp();
+                tmp.setImportId(importId);
+                tmp.setEmail(email);
+                tmp.setPhoneNumber(phone);
+
+                if (columnIndex.containsKey("name") && columnIndex.get("name") != null) {
+                    tmp.setCustomerName(formatter.formatCellValue(row.getCell(columnIndex.get("name"))));
+                }
+                if (columnIndex.containsKey("dateOfBirth") && columnIndex.get("dateOfBirth") != null) {
+                    tmp.setDateOfBirth(formatter.formatCellValue(row.getCell(columnIndex.get("dateOfBirth"))));
+                }
+                if (columnIndex.containsKey("location") && columnIndex.get("location") != null) {
+                    tmp.setLocation(formatter.formatCellValue(row.getCell(columnIndex.get("location"))));
+                }
+                
+                tmp.setGender(true); // Mặc định
+                if (columnIndex.containsKey("gender") && columnIndex.get("gender") != null) {
+                    Cell genderCell = row.getCell(columnIndex.get("gender"));
+                    if (genderCell != null) {
+                        try {
+                            tmp.setGender(genderCell.getBooleanCellValue());
+                        } catch (Exception e) {
+                            String genderStr = formatter.formatCellValue(genderCell).toLowerCase();
+                            tmp.setGender(genderStr.equals("true") || genderStr.equals("1"));
+                        }
+                    }
+                }
+                
+                long compId = defaultCompany.getId();
+                if (columnIndex.containsKey("companyId") && columnIndex.get("companyId") != null) {
+                    try {
+                        compId = Long.parseLong(formatter.formatCellValue(row.getCell(columnIndex.get("companyId"))));
+                    } catch (Exception ignored) {}
+                }
+                tmp.setCompanyId(compId);
+
+                long usrId = defaultUser.getId();
+                if (columnIndex.containsKey("userId") && columnIndex.get("userId") != null) {
+                    try {
+                        usrId = Long.parseLong(formatter.formatCellValue(row.getCell(columnIndex.get("userId"))));
+                    } catch (Exception ignored) {}
+                }
+                tmp.setUserId(usrId);
+
+                tmpList.add(tmp);
+            } catch (Exception e) {
+                System.out.println("Lỗi parse dòng " + row.getRowNum() + ": " + e.getMessage());
             }
         });
+
+        // 2. Thêm tất tần tật vào bảng tạm (O(1) mạng)
+        System.out.println("Đang lưu " + tmpList.size() + " dòng vào bảng Tmp...");
+        customerTmpRepository.saveAll(tmpList);
+
+        // 3. Gọi câu truy vấn Native SQL để xóa những thằng trùng lặp với DB Real
+        System.out.println("Đang chạy Native Query chém dữ liệu trùng...");
+        customerTmpRepository.deleteDuplicatesWithRealTable(importId);
+
+        // 4. Lấy danh sách HỢP LỆ CÒN SỐNG SÓT từ bảng Tmp
+        List<CustomerTmp> cleanTmps = customerTmpRepository.findAllByImportId(importId);
+        System.out.println("Còn lại " + cleanTmps.size() + " khách hàng hợp lệ.");
+
+        // 5. Chuyển đổi từ Tmp sang Real và Insert thẳng vào bảng Real
+        List<Customer> finalCustomers = new ArrayList<>();
+        for (CustomerTmp ct : cleanTmps) {
+            Customer c = new Customer();
+            c.setCustomerName(ct.getCustomerName());
+            c.setEmail(ct.getEmail());
+            c.setPhoneNumber(ct.getPhoneNumber());
+            c.setDateOfBirth(ct.getDateOfBirth());
+            c.setLocation(ct.getLocation());
+            c.setGender(ct.getGender());
+            
+            c.setCompany(companyRepository.findById(ct.getCompanyId()).orElse(defaultCompany));
+            c.setUser(userRepository.findById(ct.getUserId()).orElse(defaultUser));
+            
+            finalCustomers.add(c);
+        }
+
+        System.out.println("Đang đổ vào bảng Real...");
+        customerRepository.saveAll(finalCustomers);
+        System.out.println("Import THÀNH CÔNG !");
     }
 
     public CustomerResponseDTO create(CustomerRequestDTO dto) {

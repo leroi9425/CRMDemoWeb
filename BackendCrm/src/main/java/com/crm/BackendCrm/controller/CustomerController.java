@@ -6,20 +6,12 @@ import com.crm.BackendCrm.service.CustomerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,6 +29,12 @@ public class CustomerController {
     @PreAuthorize("hasAuthority('XEM_KHACH_HANG')")
     public List<CustomerResponseDTO> getAll() {
         return customerService.getAll();
+    }
+
+    @GetMapping("/page={index}")
+    @PreAuthorize("hasAuthority('XEM_KHACH_HANG')")
+    public org.springframework.data.domain.Page<CustomerResponseDTO> getPage(@PathVariable int index) {
+        return customerService.findAllInPage(index);
     }
 
     @GetMapping("/{id}")
@@ -71,8 +69,11 @@ public class CustomerController {
     }
 
     @PostMapping(value = "/import", consumes = "multipart/form-data")
-    public ResponseEntity<String> saveFileData (@RequestParam("file") MultipartFile file) throws IOException {
-        customerService.saveFileData(file.getInputStream());
+    public ResponseEntity<String> saveFileData (
+        @RequestParam("file") MultipartFile file,
+        @RequestParam("mapping") String mappingJson
+    ) throws IOException {
+        customerService.saveFileData(file.getInputStream(), mappingJson);
         return ResponseEntity.ok("file da luu vao database");
     }
     
