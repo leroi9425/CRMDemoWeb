@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getCustomers, createCustomer, updateCustomer, deleteCustomer } from "../api/customerApi";
+import { getCustomers, createCustomer, updateCustomer, deleteCustomer, getCustomersPage } from "../api/customerApi";
 import { useAuth } from "../context/AuthContext";
 import ExcelInOutPut from "./ExcelInOutPut";
 
@@ -14,14 +14,18 @@ export default function CustomerView() {
     const [deletingId, setDeletingId] = useState(null);
     const [toasts, setToasts] = useState([]);
 
+    const [currentPage, setCurrentPage] = useState(0);
+    const [totalPage, setTotalPage] = useState(1);
+
     const [formData, setFormData] = useState({
         name: "", email: "", phoneNumber: "", dateOfBirth: "", location: "", gender: true, companyId: "", userId: ""
     });
 
     const fetchCustomers = async () => {
         try {
-            const res = await getCustomers();
-            setCustomers(res.data);
+            const res = await getCustomersPage(currentPage);
+            setCustomers(res.data.content);
+            setTotalPage(res.data.totalPages);
         } catch (error) {
             showToast("Lỗi khi tải danh sách khách hàng", "danger");
         }
@@ -29,7 +33,7 @@ export default function CustomerView() {
 
     useEffect(() => {
         fetchCustomers();
-    }, []);
+    }, [currentPage]);
 
     const showToast = (message, type = "success") => {
         const id = Date.now();
@@ -185,6 +189,62 @@ export default function CustomerView() {
                             ))}
                         </tbody>
                     </table>
+
+                    {/* Pagination Controls */}
+                    <div className="flex items-center justify-between px-6 py-3 border-t border-slate-200 bg-slate-50">
+                        <div className="text-sm text-slate-500">
+                            Trang {currentPage + 1} / {totalPage}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <button
+                                disabled={currentPage === 0}
+                                onClick={() => setCurrentPage(currentPage - 1)}
+                                className="px-3 py-1.5 text-sm font-medium text-slate-500 bg-white border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <i className="fa-solid fa-chevron-left mr-1"></i> Trước
+                            </button>
+                            <div className="flex items-center space-x-1 hidden sm:flex">
+                                {(() => {
+                                    const delta = 1;
+                                    const pages = [];
+                                    for (let i = 0; i < totalPage; i++) {
+                                        if (i === 0 || i === totalPage - 1 || (i >= currentPage - delta && i <= currentPage + delta)) {
+                                            pages.push(i);
+                                        }
+                                    }
+                                    const items = [];
+                                    let prevPage = null;
+                                    for (const page of pages) {
+                                        if (prevPage !== null && page - prevPage > 1) {
+                                            items.push(<span key={`dots-${page}`} className="px-2 text-slate-400">...</span>);
+                                        }
+                                        items.push(
+                                            <button
+                                                key={page}
+                                                onClick={() => setCurrentPage(page)}
+                                                className={
+                                                    currentPage === page
+                                                        ? "px-3 py-1.5 text-sm font-medium text-white bg-primary border border-primary rounded-md shadow-sm"
+                                                        : "px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
+                                                }
+                                            >
+                                                {page + 1}
+                                            </button>
+                                        );
+                                        prevPage = page;
+                                    }
+                                    return items;
+                                })()}
+                            </div>
+                            <button
+                                disabled={currentPage === totalPage - 1 || totalPage === 0}
+                                onClick={() => setCurrentPage(currentPage + 1)}
+                                className="px-3 py-1.5 text-sm font-medium text-slate-500 bg-white border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Sau <i className="fa-solid fa-chevron-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
                     
                     {filteredCustomers.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-16 text-slate-500">
