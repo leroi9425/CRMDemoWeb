@@ -108,6 +108,30 @@ export default function CustomerView() {
 
     const getInitials = (name) => name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'NA';
 
+    if (isImportMode) {
+        return (
+            <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+                <div className="mb-6 flex items-center">
+                    <button 
+                        onClick={() => {
+                            setIsImportMode(false);
+                            fetchCustomers();
+                        }} 
+                        className="text-slate-500 hover:text-slate-700 font-medium flex items-center transition-colors bg-white px-4 py-2 border border-slate-300 rounded-lg shadow-sm"
+                    >
+                        <i className="fa-solid fa-arrow-left mr-2"></i> Quay lại danh sách
+                    </button>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <ExcelInOutPut onImportSuccess={() => {
+                        setIsImportMode(false);
+                        fetchCustomers();
+                    }} />
+                </div>
+            </main>
+        );
+    }
+
     return (
         <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
             
@@ -116,7 +140,7 @@ export default function CustomerView() {
                     <h1 className="text-2xl font-bold text-slate-900">Danh sách Khách hàng</h1>
                     <p className="text-sm text-slate-500 mt-1">Quản lý thông tin liên hệ và chi tiết khách hàng.</p>
                 </div>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-3">
                     <div className="relative hidden md:block">
                          <span className="absolute inset-y-0 left-0 flex items-center pl-3">
                             <i className="fa-solid fa-search text-slate-400"></i>
@@ -130,14 +154,21 @@ export default function CustomerView() {
                         />
                     </div>
                     {auth?.permissions?.includes('THEM_KHACH_HANG') && (
-                        <button onClick={() => openModal()} className="bg-primary hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex items-center">
-                            <i className="fa-solid fa-plus mr-2"></i> Thêm Mới
-                        </button>
+                        <>
+                            <button onClick={() => openModal()} className="bg-primary hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex items-center whitespace-nowrap">
+                                <i className="fa-solid fa-plus mr-2"></i> Thêm Mới
+                            </button>
+                            <button 
+                                onClick={() => setIsImportMode(true)} 
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex items-center whitespace-nowrap"
+                            >
+                                <i className="fa-solid fa-file-excel mr-2"></i> Thêm bằng file Excel
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
             
-                <ExcelInOutPut/>
             <div className="bg-white shadow-sm rounded-xl border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full whitespace-nowrap">

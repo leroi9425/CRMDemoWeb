@@ -14,7 +14,7 @@ const DB_FIELDS = [
   { key: 'userId', label: 'ID Người dùng', required: false },
 ];
 
-export default function ExcelInOutPut() {
+export default function ExcelInOutPut({ onImportSuccess }) {
   const [file, setFile] = useState(null);
   const [excelHeaders, setExcelHeaders] = useState([]);
   const [mapping, setMapping] = useState({}); // format: { excelIndex: dbKey }
@@ -98,6 +98,9 @@ export default function ExcelInOutPut() {
     try {
       const response = await importCustomer(formData);
       alert(response.data || "Import thành công!");
+      if (onImportSuccess) {
+          onImportSuccess(); // Quay về màn hình trước
+      }
     } catch (error) {
       console.error("Lỗi import file:", error);
       alert("Lỗi, số điện thoại hoặc email đã tồn tại !");

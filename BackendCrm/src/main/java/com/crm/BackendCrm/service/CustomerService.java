@@ -190,38 +190,13 @@ public class CustomerService {
             }
         });
 
-        // 2. Thêm tất tần tật vào bảng tạm (O(1) mạng)
         System.out.println("Đang lưu " + tmpList.size() + " dòng vào bảng Tmp...");
         customerTmpRepository.saveAll(tmpList);
 
-        // 3. Gọi câu truy vấn Native SQL để xóa những thằng trùng lặp với DB Real
-        System.out.println("Đang chạy Native Query chém dữ liệu trùng...");
-        customerTmpRepository.deleteDuplicatesWithRealTable(importId);
+        System.out.println("Đang gọi Stored Procedure xử lý data nội bộ DB...");
+        customerTmpRepository.processCustomerImport(importId);
 
-        // 4. Lấy danh sách HỢP LỆ CÒN SỐNG SÓT từ bảng Tmp
-        List<CustomerTmp> cleanTmps = customerTmpRepository.findAllByImportId(importId);
-        System.out.println("Còn lại " + cleanTmps.size() + " khách hàng hợp lệ.");
-
-        // 5. Chuyển đổi từ Tmp sang Real và Insert thẳng vào bảng Real
-        List<Customer> finalCustomers = new ArrayList<>();
-        for (CustomerTmp ct : cleanTmps) {
-            Customer c = new Customer();
-            c.setCustomerName(ct.getCustomerName());
-            c.setEmail(ct.getEmail());
-            c.setPhoneNumber(ct.getPhoneNumber());
-            c.setDateOfBirth(ct.getDateOfBirth());
-            c.setLocation(ct.getLocation());
-            c.setGender(ct.getGender());
-            
-            c.setCompany(companyRepository.findById(ct.getCompanyId()).orElse(defaultCompany));
-            c.setUser(userRepository.findById(ct.getUserId()).orElse(defaultUser));
-            
-            finalCustomers.add(c);
-        }
-
-        System.out.println("Đang đổ vào bảng Real...");
-        customerRepository.saveAll(finalCustomers);
-        System.out.println("Import THÀNH CÔNG !");
+        System.out.println("Import THÀNH CÔNG ! (Bằng sức mạnh của Stored Procedure)");
     }
 
     public CustomerResponseDTO create(CustomerRequestDTO dto) {
