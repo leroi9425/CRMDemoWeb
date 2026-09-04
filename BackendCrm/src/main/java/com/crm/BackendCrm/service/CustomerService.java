@@ -190,11 +190,13 @@ public class CustomerService {
             }
         });
 
-        System.out.println("Đang lưu " + tmpList.size() + " dòng vào bảng Tmp...");
-        customerTmpRepository.saveAll(tmpList);
+        // System.out.println("Đang lưu " + tmpList.size() + " dòng vào bảng Tmp...");
+        // customerTmpRepository.saveAll(tmpList);
+
+        String jsonData = mapper.writeValueAsString(tmpList);
 
         System.out.println("Đang gọi Stored Procedure xử lý data nội bộ DB...");
-        customerTmpRepository.processCustomerImport(importId);
+        customerTmpRepository.processCustomerImport(jsonData);
 
         System.out.println("Import THÀNH CÔNG ! (Bằng sức mạnh của Stored Procedure)");
     }

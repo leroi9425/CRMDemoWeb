@@ -15,16 +15,16 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
-    private final NotificationRepository notificationRepository;
-    private final SimpMessagingTemplate messagingTemplate;
+    // private final NotificationRepository notificationRepository;
+    // private final SimpMessagingTemplate messagingTemplate;
     
 
-    public  NotificationResponseDTO toDTO(Notification notification) {
-        return new NotificationResponseDTO(
-            notification.getId(),
-            notification.getMessage(),
-            notification.getCreatedAt()
-        );
-    }
+    // public  NotificationResponseDTO toDTO(Notification notification) {
+    //     return new NotificationResponseDTO(
+    //         notification.getId(),
+    //         notification.getMessage(),
+    //         notification.getCreatedAt()
+    //     );
+    // }
 
 }
