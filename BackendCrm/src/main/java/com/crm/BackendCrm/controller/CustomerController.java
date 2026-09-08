@@ -3,10 +3,8 @@ package com.crm.BackendCrm.controller;
 import com.crm.BackendCrm.dto.Request.CustomerRequestDTO;
 import com.crm.BackendCrm.dto.Response.CustomerDetailResponseDTO;
 import com.crm.BackendCrm.dto.Response.CustomerResponseDTO;
-import com.crm.BackendCrm.dto.Response.UserResponseDTO;
 import com.crm.BackendCrm.security.JwtUtils;
 import com.crm.BackendCrm.service.CustomerService;
-import com.crm.BackendCrm.service.UserService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

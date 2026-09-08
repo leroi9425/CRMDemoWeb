@@ -92,7 +92,6 @@ public class ContactService {
 
     private ContactResponseDTO toDTO(Contact c) {
         Long posId = (c.getPosition() != null) ? c.getPosition().getId() : null;
-        String posName = (c.getPosition() != null) ? c.getPosition().getNamePosition() : null;
 
         return new ContactResponseDTO(
                 c.getId(),

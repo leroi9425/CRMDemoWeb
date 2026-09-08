@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 
 import com.crm.BackendCrm.entity.Notification;
 import com.crm.BackendCrm.repository.NotificationRepository;
-import com.crm.BackendCrm.repository.UserRepository;
 import com.crm.BackendCrm.dto.Response.NotificationResponseDTO;
 import com.crm.BackendCrm.entity.User;
 import org.springframework.messaging.simp.SimpMessagingTemplate;

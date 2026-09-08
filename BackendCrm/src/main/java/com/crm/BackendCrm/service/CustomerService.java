@@ -286,8 +286,8 @@ public class CustomerService {
     }
 
     public CustomerResponseDTO create(CustomerRequestDTO dto, Long senderId) {
-        User sender = userRepository.findById(senderId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sender not found"));
+        // User sender = userRepository.findById(senderId)
+        //     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sender not found"));
 
         // if (customerRepository.existsByEmail(dto.email())) {
         //     throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
