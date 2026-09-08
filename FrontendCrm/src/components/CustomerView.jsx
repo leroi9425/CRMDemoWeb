@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
-import { getCustomers, createCustomer, updateCustomer, deleteCustomer, getCustomersPage } from "../api/customerApi";
+import { getCustomers, createCustomer, updateCustomer, deleteCustomer, getCustomersPage, getCustomerDetail } from "../api/customerApi";
 import { useAuth } from "../context/AuthContext";
 import ExcelInOutPut from "./ExcelInOutPut";
-
 
 export default function CustomerView() {
     const [customers, setCustomers] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [detailCustomer, setDetailCustomer] = useState(null);
     const [editingCustomer, setEditingCustomer] = useState(null);
     const [deletingId, setDeletingId] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
@@ -26,6 +27,7 @@ export default function CustomerView() {
         try {
             const res = await getCustomersPage(currentPage);
             console.log(res.data);
+            console.log("current page: " + currentPage);
             setCustomers(res.data.content);
             setTotalPage(res.data.totalPages);
         } catch (error) {
@@ -69,6 +71,21 @@ export default function CustomerView() {
     const closeModal = () => {
         setIsModalOpen(false);
         setEditingCustomer(null);
+    };
+
+    const openDetailModal = async (id) => {
+        try {
+            const res = await getCustomerDetail(id);
+            setDetailCustomer(res.data);
+            setIsDetailModalOpen(true);
+        } catch (error) {
+            showToast("Không thể tải chi tiết khách hàng", "danger");
+        }
+    };
+
+    const closeDetailModal = () => {
+        setIsDetailModalOpen(false);
+        setDetailCustomer(null);
     };
 
     const handleSubmit = async (e) => {
@@ -183,7 +200,7 @@ export default function CustomerView() {
                         </thead>
                         <tbody className="divide-y divide-slate-200 text-sm">
                             {filteredCustomers.map(customer => (
-                                <tr key={customer.id} className="hover:bg-slate-50 transition-colors group">
+                                <tr key={customer.id} onClick={() => openDetailModal(customer.id)} className="hover:bg-slate-50 transition-colors group cursor-pointer">
                                     <td className="px-6 py-4 whitespace-nowrap text-slate-500 font-mono text-xs">#{customer.id}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
@@ -204,7 +221,7 @@ export default function CustomerView() {
                                         <div className="text-slate-700"><i className="fa-solid fa-calendar text-slate-400 mr-2 w-4"></i>{customer.dateOfBirth}</div>
                                         <div className="text-slate-500 text-xs mt-1"><i className="fa-solid fa-location-dot text-slate-400 mr-2 w-4"></i>{customer.location}</div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right font-medium">
+                                    <td className="px-6 py-4 whitespace-nowrap text-right font-medium" onClick={(e) => e.stopPropagation()}>
                                         <div className="flex justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             {auth?.permissions?.includes("THEM_KHACH_HANG") && (
                                                 <button onClick={() => openModal(customer)} className="p-2 text-primary hover:bg-blue-50 rounded-lg transition-colors" title="Sửa">
@@ -363,6 +380,105 @@ export default function CustomerView() {
                             <button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 w-full">Hủy bỏ</button>
                             <button onClick={confirmDelete} className="px-4 py-2 text-sm font-medium text-white bg-danger rounded-lg hover:bg-red-600 w-full">Đồng ý Xóa</button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Detail Modal */}
+            <div className={`fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center transition-opacity duration-300 ${isDetailModalOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                <div className={`bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 overflow-hidden flex flex-col max-h-[90vh] transition-transform duration-300 ${isDetailModalOpen ? 'scale-100' : 'scale-95'}`}>
+                    <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                        <h3 className="text-lg font-semibold text-slate-900">Chi tiết Khách hàng</h3>
+                        <button onClick={closeDetailModal} className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-md hover:bg-slate-200">
+                            <i className="fa-solid fa-xmark text-xl"></i>
+                        </button>
+                    </div>
+                    <div className="px-6 py-4 overflow-y-auto bg-slate-50/50">
+                        {detailCustomer ? (
+                            <div className="space-y-6">
+                                {/* Thông tin chung */}
+                                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                                    <h4 className="text-base font-semibold text-slate-800 mb-4 flex items-center">
+                                        <i className="fa-regular fa-address-card mr-2 text-primary"></i> Thông tin chung
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                        <div><span className="text-slate-500 block mb-1">Khách hàng:</span> <span className="font-medium text-slate-900 text-base">{detailCustomer.customerName}</span></div>
+                                        <div><span className="text-slate-500 block mb-1">Điện thoại chính:</span> <span className="font-medium text-slate-900">{detailCustomer.phoneNumber}</span></div>
+                                        <div><span className="text-slate-500 block mb-1">Ngày sinh:</span> <span className="font-medium text-slate-900">{detailCustomer.dateOfBirth}</span></div>
+                                        <div><span className="text-slate-500 block mb-1">Giới tính:</span> <span className="font-medium text-slate-900">{detailCustomer.gender ? "Nam" : "Nữ"}</span></div>
+                                    </div>
+                                </div>
+
+                                {/* Lưới 2 cột cho Email và Người liên hệ */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    {/* Cột Danh sách Email */}
+                                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                                        <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
+                                            <h4 className="font-semibold text-slate-800 text-sm flex items-center">
+                                                <i className="fa-solid fa-envelope-open-text mr-2 text-emerald-500"></i> Danh sách Email phụ
+                                            </h4>
+                                        </div>
+                                        <div className="p-4 flex-grow">
+                                            {detailCustomer.emails?.length > 0 ? (
+                                                <ul className="space-y-2">
+                                                    {detailCustomer.emails.map(email => (
+                                                        <li key={email.id} className="flex items-center text-sm p-2 rounded-lg bg-slate-50 border border-slate-100">
+                                                            <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mr-3 flex-shrink-0">
+                                                                <i className="fa-regular fa-envelope"></i>
+                                                            </div>
+                                                            <span className="text-slate-700 font-medium">{email.emailAddress}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <div className="text-center py-6 text-slate-400 text-sm italic">
+                                                    Không có email phụ nào.
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Cột Người liên hệ */}
+                                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                                        <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
+                                            <h4 className="font-semibold text-slate-800 text-sm flex items-center">
+                                                <i className="fa-solid fa-users mr-2 text-blue-500"></i> Người liên hệ
+                                            </h4>
+                                        </div>
+                                        <div className="p-4 flex-grow">
+                                            {detailCustomer.contactPositions?.length > 0 ? (
+                                                <div className="space-y-3">
+                                                    {detailCustomer.contactPositions.map(contactP => (
+                                                        <div key={contactP.id} className="flex flex-col p-3 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors bg-white">
+                                                            <div className="flex justify-between items-start mb-1">
+                                                                <span className="font-bold text-slate-800 text-sm">{contactP.contactName}</span>
+                                                                {contactP.positionName && (
+                                                                    <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-medium rounded border border-blue-100">
+                                                                        {contactP.positionName}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-xs text-slate-600 grid grid-cols-1 sm:grid-cols-2 gap-1 mt-2">
+                                                                <div className="flex items-center"><i className="fa-solid fa-phone w-4 text-slate-400"></i> {contactP.phoneNumber}</div>
+                                                                {contactP.email && <div className="flex items-center"><i className="fa-solid fa-envelope w-4 text-slate-400"></i> {contactP.email}</div>}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-6 text-slate-400 text-sm italic">
+                                                    Chưa có người liên hệ nào được thêm.
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex justify-center items-center py-12">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

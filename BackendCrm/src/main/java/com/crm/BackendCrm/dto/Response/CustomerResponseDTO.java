@@ -5,12 +5,12 @@ import java.time.LocalDateTime;
 public record CustomerResponseDTO(
     Long id, 
     String name, 
-    String phoneNumber, 
-    String email, 
+    String phoneNumber,
     String dateOfBirth, 
     String location, 
     boolean gender, 
     LocalDateTime createdAt,
     Long companyId,
-    Long userId
+    Long userId,
+    String customerCode
 ) {}

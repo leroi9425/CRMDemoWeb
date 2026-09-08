@@ -6,6 +6,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import com.crm.BackendCrm.entity.User;
 
 import java.security.Key;
 import java.util.Date;
@@ -31,6 +32,10 @@ public class JwtUtils {
         return extractClaim(token, claims -> claims.get("role", String.class));
     }
 
+    public Long extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get("userId", Long.class));
+    }
+
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
@@ -49,13 +54,15 @@ public class JwtUtils {
         
         // Chỉ lưu Role vào JWT, không lưu Permissions
         if (userDetails instanceof com.crm.BackendCrm.entity.User) {
-            com.crm.BackendCrm.entity.User user = (com.crm.BackendCrm.entity.User) userDetails;
+            User user = (User) userDetails;
             String roleName = user.getRoles().stream()
                     .findFirst()
                     .map(com.crm.BackendCrm.entity.Role::getName)
                     .orElse("USER");
             // 3. CHỈ NHÉT ĐÚNG CÁI TÊN ROLE ĐÓ VÀO JWT (Tuyệt đối không nhét Permission nữa)
             extraClaims.put("role", roleName);
+            // cho thêm userId vào JWT để tiện cho việc lấy thông tin người dùng
+            extraClaims.put("userId", user.getId());
         }
         
         // 4. Sinh ra Token mỏng nhẹ

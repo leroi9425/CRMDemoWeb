@@ -5,7 +5,6 @@ public record CustomerTmpResponseDTO(
     Long importId,
     String dateOfBirth,
     String customerName,
-    String email,
     String phoneNumber,
     String location,
     Boolean gender,

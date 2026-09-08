@@ -12,7 +12,6 @@ public interface CustomerTmpRepository extends JpaRepository<CustomerTmp, Long> 
     
     @Modifying
     @Transactional
-    // @Query(value = "CALL import_khachhang_json(:jsonData)", nativeQuery = true)
-    @Query(value = "CALL import_customers3(:jsonData)", nativeQuery = true)
-    void processCustomerImport(@Param("jsonData") String jsonData);
+    @Query(value = "CALL import_customersV2(:jsonData, :jsonEmail)", nativeQuery = true)
+    void processCustomerImport(@Param("jsonData") String jsonData, @Param("jsonEmail") String jsonEmail);
 }

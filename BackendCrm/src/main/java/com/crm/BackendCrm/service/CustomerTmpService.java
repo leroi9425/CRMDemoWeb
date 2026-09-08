@@ -28,7 +28,6 @@ public class CustomerTmpService {
                 ct.getImportId(),
                 ct.getDateOfBirth(),
                 ct.getCustomerName(),
-                ct.getEmail(),
                 ct.getPhoneNumber(),
                 ct.getLocation(),
                 ct.getGender(),

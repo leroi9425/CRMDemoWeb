@@ -39,6 +39,9 @@ public class Customer {
     @Column(updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(nullable = false, unique = true)
+    private String customerCode;
+
     @ManyToOne
     @JoinColumn(name = "company_id")
     private Company company;

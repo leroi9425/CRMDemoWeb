@@ -8,7 +8,6 @@ import lombok.Setter;
 
 
 @Entity
-@Table(name = "customers_tmp")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -28,9 +27,6 @@ public class CustomerTmp {
     @Column(name = "customer_name", nullable = false)
     private String customerName;
 
-    @Column(name = "email", nullable = false)
-    private String email;
-
     @Column(name = "phone_number", nullable = false)
     private String phoneNumber;
 
@@ -45,4 +41,7 @@ public class CustomerTmp {
 
     @Column(name = "company_id", nullable = false)
     private Long companyId;
+
+    @Column(name = "customer_code", nullable = false, unique = true)
+    private String customerCode;
 }
