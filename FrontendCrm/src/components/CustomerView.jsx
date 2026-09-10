@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getCustomers, createCustomer, updateCustomer, deleteCustomer, getCustomersPage, getCustomerDetail } from "../api/customerApi";
+import { getCustomers, createCustomer, updateCustomer, deleteCustomer, getCustomersPage, getCustomerDetail, filterCustomersPage } from "../api/customerApi";
 import { useAuth } from "../context/AuthContext";
 import ExcelInOutPut from "./ExcelInOutPut";
 
@@ -11,7 +11,16 @@ export default function CustomerView() {
     const [detailCustomer, setDetailCustomer] = useState(null);
     const [editingCustomer, setEditingCustomer] = useState(null);
     const [deletingId, setDeletingId] = useState(null);
-    const [searchTerm, setSearchTerm] = useState("");
+    const [showFilter, setShowFilter] = useState(false);
+    const [filterData, setFilterData] = useState({
+        search: "",
+        customerName: "",
+        phoneNumber: "",
+        location: "",
+        gender: "",
+        fromDateOfBirth: "",
+        toDateOfBirth: ""
+    });
     const [toasts, setToasts] = useState([]);
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPage, setTotalPage] = useState(0);
@@ -25,9 +34,15 @@ export default function CustomerView() {
 
     const fetchCustomers = async () => {
         try {
-            const res = await getCustomersPage(currentPage);
-            console.log(res.data);
-            console.log("current page: " + currentPage);
+            console.log("filter data" + filterData);
+            const payload = {
+                ...filterData,
+                gender: filterData.gender === "" ? null : filterData.gender === "true",
+            };
+            console.log("SEARCH FE:", payload.search);
+            console.log("SEARCH FE JSON:", JSON.stringify(payload.search));
+            const res = await filterCustomersPage(currentPage, payload);
+            console.log("res: "+ res)
             setCustomers(res.data.content);
             setTotalPage(res.data.totalPages);
         } catch (error) {
@@ -46,6 +61,14 @@ export default function CustomerView() {
             setToasts(prev => prev.filter(t => t.id !== id));
         }, 3000);
     };
+
+    const formatPhoneNumber = (phone) => {
+        if(!phone) return "";
+
+        const cleanPhone = phone.replace(/\D/g, '');
+        const match = cleanPhone.match(/^(\d{3})(\d{3})(\d{4,})$/);
+        return match ? `${match[1]}.${match[2]}.${match[3]}` : phone;
+    }
 
     const openModal = (customer = null) => {
         setEditingCustomer(customer);
@@ -117,13 +140,72 @@ export default function CustomerView() {
         }
     };
 
-    const filteredCustomers = customers.filter(c => 
-        c.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        c.phoneNumber?.includes(searchTerm) ||
-        c.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredCustomers = customers;
 
     const getInitials = (name) => name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'NA';
+
+    const handleSort = (field) => {
+        let newDir = "DESC";
+        if (filterData.sortField === field) {
+            if (filterData.sortDirection === "DESC") newDir = "ASC";
+            else if (filterData.sortDirection === "ASC") newDir = "";
+        }
+        
+        const newFilterData = {
+            ...filterData,
+            sortField: newDir === "" ? "" : field,
+            sortDirection: newDir
+        };
+        setFilterData(newFilterData);
+        
+        // Gọi API ngay lập tức để Sort ăn liền
+        const payload = {
+            ...newFilterData,
+            gender: newFilterData.gender === "" ? null : newFilterData.gender === "true",
+            fromDateOfBirth: newFilterData.fromDateOfBirth || null,
+            toDateOfBirth: newFilterData.toDateOfBirth || null
+        };
+        
+        filterCustomersPage(currentPage, payload)
+            .then(res => {
+                setCustomers(res.data.content);
+                setTotalPage(res.data.totalPages);
+            })
+            .catch(() => showToast("Lỗi khi sắp xếp", "danger"));
+    };
+
+    const renderSortIcon = (field) => {
+        if (filterData.sortField !== field || !filterData.sortDirection) {
+            return <i className="fa-solid fa-sort ml-1 text-slate-300"></i>;
+        }
+        if (filterData.sortDirection === "DESC") {
+            return <i className="fa-solid fa-sort-down ml-1 text-primary"></i>;
+        }
+        return <i className="fa-solid fa-sort-up ml-1 text-primary"></i>;
+    };
+    if (isImportMode) {
+        return (
+            <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+                <div className="mb-6 flex items-center">
+                    <button 
+                        onClick={() => {
+                            setIsImportMode(false);
+                            fetchCustomers();
+                        }} 
+                        className="text-slate-500 hover:text-slate-700 font-medium flex items-center transition-colors bg-white px-4 py-2 border border-slate-300 rounded-lg shadow-sm"
+                    >
+                        <i className="fa-solid fa-arrow-left mr-2"></i> Quay lại danh sách
+                    </button>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <ExcelInOutPut onImportSuccess={() => {
+                        setIsImportMode(false);
+                        fetchCustomers();
+                    }} />
+                </div>
+            </main>
+        );
+    }
 
     if (isImportMode) {
         return (
@@ -151,57 +233,160 @@ export default function CustomerView() {
 
     return (
         <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-            
             <div className="flex justify-between items-end mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Danh sách Khách hàng</h1>
                     <p className="text-sm text-slate-500 mt-1">Quản lý thông tin liên hệ và chi tiết khách hàng.</p>
                 </div>
-                <div className="flex items-center space-x-3">
-                    <div className="relative hidden md:block">
-                         <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                            <i className="fa-solid fa-search text-slate-400"></i>
-                        </span>
-                        <input 
-                            type="text" 
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow w-64 bg-slate-50" 
-                            placeholder="Tìm kiếm khách hàng..."
-                        />
+                <div className="flex flex-col items-end space-y-3">
+                    {/* Cụm Search nằm bên trên */}
+                    <div className="flex items-center space-x-2">
+                        <div className="relative hidden md:block">
+                            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                <i className="fa-solid fa-search text-slate-400"></i>
+                            </span>
+                            <input 
+                                type="text" 
+                                value={filterData.search}
+                                onChange={(e) => setFilterData({...filterData, search: e.target.value})}
+                                className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow w-64 bg-slate-50" 
+                                placeholder="Tìm kiếm nhanh..."
+                            />
+                        </div>
+                        <button type="button" 
+                        onClick={() => {setCurrentPage(0); fetchCustomers();}}
+                        className="bg-primary hover:bg-blue-600 text-white text-sm font-medium py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 whitespace-nowrap">
+                            Tìm kiếm
+                        </button>
                     </div>
-                    {auth?.permissions?.includes('THEM_KHACH_HANG') && (
-                        <>
-                            <button onClick={() => openModal()} className="bg-primary hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex items-center whitespace-nowrap">
-                                <i className="fa-solid fa-plus mr-2"></i> Thêm Mới
-                            </button>
-                            <button 
-                                onClick={() => setIsImportMode(true)} 
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex items-center whitespace-nowrap"
-                            >
-                                <i className="fa-solid fa-file-excel mr-2"></i> Thêm bằng file Excel
-                            </button>
-                        </>
-                    )}
+
+                    {/* Hàng nút bấm nằm bên dưới */}
+                    <div className="flex items-center space-x-3">
+                        <button onClick={() => setShowFilter(!showFilter)} className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex items-center whitespace-nowrap"><i className="fa-solid fa-filter mr-2"></i> Bộ lọc</button>
+                        {auth?.permissions?.includes('THEM_KHACH_HANG') && (
+                            <>
+                                <button onClick={() => openModal()} className="bg-primary hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex items-center whitespace-nowrap">
+                                    <i className="fa-solid fa-plus mr-2"></i> Thêm Mới
+                                </button>
+                                <button 
+                                    onClick={() => setIsImportMode(true)} 
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex items-center whitespace-nowrap"
+                                >
+                                    <i className="fa-solid fa-file-excel mr-2"></i> Thêm bằng file Excel
+                                </button>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
             
+            {showFilter && (
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 transition-all duration-300">
+                    <h3 className="text-sm font-semibold text-slate-700 mb-3"><i className="fa-solid fa-filter text-primary mr-2"></i>Bộ lọc tìm kiếm</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label className="block text-xs font-medium text-slate-500 mb-1">Tên khách hàng</label>
+                            <input type="text" 
+                            value={filterData.customerName} 
+                            onChange={(e) => setFilterData({...filterData, customerName: e.target.value})} 
+                            className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Nhập tên..." />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-slate-500 mb-1">Số điện thoại</label>
+                            <input type="text" 
+                            value={filterData.phoneNumber} 
+                            onChange={(e) => setFilterData({...filterData, phoneNumber: e.target.value})} 
+                            className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Nhập SĐT..." />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-slate-500 mb-1">Khu vực</label>
+                            <input type="text" 
+                            value={filterData.location} 
+                            onChange={(e) => setFilterData({...filterData, location: e.target.value})} 
+                            className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Nhập khu vực..." />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-slate-500 mb-1">Giới tính</label>
+                            <select value={filterData.gender} 
+                            onChange={(e) => setFilterData({...filterData, gender: e.target.value})} 
+                            className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary bg-white">
+                                <option value="">Tất cả</option>
+                                <option value="true">Nam</option>
+                                <option value="false">Nữ</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    {/* Phần Giao diện Ngày sinh (Chưa nối logic State theo yêu cầu) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                            <h4 className="text-xs font-semibold text-slate-700 mb-2"><i className="fa-regular fa-calendar text-slate-400 mr-1"></i> Khoảng ngày sinh</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-medium text-slate-500 mb-1">Từ ngày</label>
+                                    <input type="date" 
+                                    value={filterData.fromDateOfBirth}
+                                    onChange={(e) => setFilterData({...filterData, fromDateOfBirth: e.target.value})}
+                                    className="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary bg-white" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-slate-500 mb-1">Đến ngày</label>
+                                    <input type="date" 
+                                    value={filterData.toDateOfBirth}
+                                    onChange={(e) => {
+                                        console.log("toDateOfBirth e target value: " + e.target.value);
+                                        setFilterData({...filterData, toDateOfBirth: e.target.value});
+                                    }}
+                                    className="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary bg-white" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="mt-4 flex justify-end space-x-3">
+                        <button onClick={() => {
+                            setFilterData({
+                                customerName: "", 
+                                phoneNumber: "", 
+                                location: "", 
+                                gender: "",
+                                fromDateOfBirth: "",
+                                toDateOfBirth: ""
+                            });
+                        }} className="px-4 py-2 text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors">Xóa điều kiện</button>
+                        <button 
+                            onClick={() => { setCurrentPage(0); fetchCustomers(); }} 
+                            className="px-4 py-2 text-sm text-white bg-primary hover:bg-blue-600 rounded-md transition-colors shadow-sm">
+                                <i className="fa-solid fa-search mr-2"></i> Áp dụng lọc
+                        </button>
+                    </div>
+                </div>
+            )}
+            
             <div className="bg-white shadow-sm rounded-xl border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full whitespace-nowrap">
-                        <thead>
+                    <table className="w-full table-fixed whitespace-nowrap">
+                                                                        <thead>
                             <tr className="bg-slate-50 border-b border-slate-200 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                <th className="px-6 py-4">ID</th>
-                                <th className="px-6 py-4">Khách hàng</th>
-                                <th className="px-6 py-4">Liên hệ</th>
-                                <th className="px-6 py-4">Thông tin thêm</th>
-                                <th className="px-6 py-4 text-right">Thao tác</th>
+                                <th className="px-6 py-4 w-[5%]">STT</th>
+                                <th className="px-6 py-4 w-[25%] cursor-pointer hover:bg-slate-200 transition-colors select-none" onClick={() => handleSort('customerName')} title="Sắp xếp theo Tên">
+                                    Tên khách hàng {renderSortIcon('customerName')}
+                                </th>
+                                <th className="px-6 py-4 w-[25%] cursor-pointer hover:bg-slate-200 transition-colors select-none" onClick={() => handleSort('phoneNumber')} title="Sắp xếp theo SĐT">
+                                    Số điện thoại {renderSortIcon('phoneNumber')}
+                                </th>
+                                <th className="px-6 py-4 w-[15%] cursor-pointer hover:bg-slate-200 transition-colors select-none" onClick={() => handleSort('dateOfBirth')} title="Sắp xếp theo Ngày sinh">
+                                    Ngày sinh {renderSortIcon('dateOfBirth')}
+                                </th>
+                                <th className="px-6 py-4 w-[15%] cursor-pointer hover:bg-slate-200 transition-colors select-none" onClick={() => handleSort('location')} title="Sắp xếp theo Khu vực">
+                                    Khu vực {renderSortIcon('location')}
+                                </th>
+                                <th className="px-6 py-4 w-[15%] text-right">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 text-sm">
-                            {filteredCustomers.map(customer => (
+                            {filteredCustomers.map((customer, i)=> (
                                 <tr key={customer.id} onClick={() => openDetailModal(customer.id)} className="hover:bg-slate-50 transition-colors group cursor-pointer">
-                                    <td className="px-6 py-4 whitespace-nowrap text-slate-500 font-mono text-xs">#{customer.id}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-slate-500 font-mono text-xs">#{i+1}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
                                             <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
@@ -214,12 +399,14 @@ export default function CustomerView() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-slate-700"><i className="fa-solid fa-phone text-slate-400 mr-2 w-4"></i>{customer.phoneNumber}</div>
+                                        <div className="text-slate-700"><i className="fa-solid fa-phone text-slate-400 mr-2 w-4"></i>{formatPhoneNumber(customer.phoneNumber)}</div>
                                         <div className="text-slate-500 text-xs mt-1"><i className="fa-solid fa-envelope text-slate-400 mr-2 w-4"></i>{customer.email || 'N/A'}</div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-slate-700"><i className="fa-solid fa-calendar text-slate-400 mr-2 w-4"></i>{customer.dateOfBirth}</div>
-                                        <div className="text-slate-500 text-xs mt-1"><i className="fa-solid fa-location-dot text-slate-400 mr-2 w-4"></i>{customer.location}</div>
+                                                                        <td className="px-6 py-4 whitespace-nowrap text-slate-700">
+                                        <i className="fa-solid fa-calendar text-slate-400 mr-2"></i>{customer.dateOfBirth}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-slate-700">
+                                        <i className="fa-solid fa-location-dot text-slate-400 mr-2"></i>{customer.location}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right font-medium" onClick={(e) => e.stopPropagation()}>
                                         <div className="flex justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -386,7 +573,7 @@ export default function CustomerView() {
 
             {/* Detail Modal */}
             <div className={`fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center transition-opacity duration-300 ${isDetailModalOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                <div className={`bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 overflow-hidden flex flex-col max-h-[90vh] transition-transform duration-300 ${isDetailModalOpen ? 'scale-100' : 'scale-95'}`}>
+                <div className={`bg-white rounded-2xl shadow-xl w-full max-w-7xl mx-4 overflow-hidden flex flex-col max-h-[90vh] transition-transform duration-300 ${isDetailModalOpen ? 'scale-100' : 'scale-95'}`}>
                     <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
                         <h3 className="text-lg font-semibold text-slate-900">Chi tiết Khách hàng</h3>
                         <button onClick={closeDetailModal} className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-md hover:bg-slate-200">
@@ -403,9 +590,10 @@ export default function CustomerView() {
                                     </h4>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                         <div><span className="text-slate-500 block mb-1">Khách hàng:</span> <span className="font-medium text-slate-900 text-base">{detailCustomer.customerName}</span></div>
-                                        <div><span className="text-slate-500 block mb-1">Điện thoại chính:</span> <span className="font-medium text-slate-900">{detailCustomer.phoneNumber}</span></div>
+                                        <div><span className="text-slate-500 block mb-1">Điện thoại chính:</span> <span className="font-medium text-slate-900">{formatPhoneNumber(detailCustomer.phoneNumber)}</span></div>
                                         <div><span className="text-slate-500 block mb-1">Ngày sinh:</span> <span className="font-medium text-slate-900">{detailCustomer.dateOfBirth}</span></div>
                                         <div><span className="text-slate-500 block mb-1">Giới tính:</span> <span className="font-medium text-slate-900">{detailCustomer.gender ? "Nam" : "Nữ"}</span></div>
+                                        <div><span className="text-slate-500 block mb-1">Email:</span> <span className="font-medium text-slate-900">{detailCustomer.emails[0] ? detailCustomer.emails[0].emailAddress : "Không có email"}</span></div>
                                     </div>
                                 </div>
 
@@ -421,7 +609,7 @@ export default function CustomerView() {
                                         <div className="p-4 flex-grow">
                                             {detailCustomer.emails?.length > 0 ? (
                                                 <ul className="space-y-2">
-                                                    {detailCustomer.emails.map(email => (
+                                                    {detailCustomer.emails.slice(1).map(email => (
                                                         <li key={email.id} className="flex items-center text-sm p-2 rounded-lg bg-slate-50 border border-slate-100">
                                                             <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mr-3 flex-shrink-0">
                                                                 <i className="fa-regular fa-envelope"></i>
@@ -459,7 +647,7 @@ export default function CustomerView() {
                                                                 )}
                                                             </div>
                                                             <div className="text-xs text-slate-600 grid grid-cols-1 sm:grid-cols-2 gap-1 mt-2">
-                                                                <div className="flex items-center"><i className="fa-solid fa-phone w-4 text-slate-400"></i> {contactP.phoneNumber}</div>
+                                                                <div className="flex items-center"><i className="fa-solid fa-phone w-4 text-slate-400"></i> {formatPhoneNumber(contactP.phoneNumber)}</div>
                                                                 {contactP.email && <div className="flex items-center"><i className="fa-solid fa-envelope w-4 text-slate-400"></i> {contactP.email}</div>}
                                                             </div>
                                                         </div>

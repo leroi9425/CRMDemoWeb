@@ -1,5 +1,6 @@
 package com.crm.BackendCrm.controller;
 
+import com.crm.BackendCrm.dto.Request.CustomerFilterRequestDTO;
 import com.crm.BackendCrm.dto.Request.CustomerRequestDTO;
 import com.crm.BackendCrm.dto.Response.CustomerDetailResponseDTO;
 import com.crm.BackendCrm.dto.Response.CustomerResponseDTO;
@@ -14,12 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.data.domain.Page;
 
 @RestController
@@ -30,11 +28,24 @@ public class CustomerController {
     private final CustomerService customerService;
     private final JwtUtils jwtUtils;
 
-    @GetMapping
-    @PreAuthorize("hasAuthority('XEM_KHACH_HANG')")
-    public List<CustomerResponseDTO> getAll() {
-        return customerService.getAll();
+    // @GetMapping
+    // @PreAuthorize("hasAuthority('XEM_KHACH_HANG')")
+    // public List<CustomerResponseDTO> getAll() {
+    //     return customerService.getAll();
+    // }
+
+    @PostMapping("/filter/page={index}")
+    public Page<CustomerResponseDTO> getPageFilter (
+        @Valid @RequestBody CustomerFilterRequestDTO cfrDTO,
+        @PathVariable int index, 
+        @RequestHeader("Authorization") String authHeader
+    ) {
+        String jwt = authHeader.substring(7);
+        Long userId = jwtUtils.extractUserId(jwt);
+
+        return customerService.findAllPageFIlter(cfrDTO, index, userId);
     }
+    
 
     @GetMapping("/page={index}")
     @PreAuthorize("hasAuthority('XEM_KHACH_HANG')")

@@ -54,6 +54,21 @@ axiosInstance.interceptors.response.use(
                 console.error("Lỗi khi tải lại quyền", err);
             }
         }
+        if (error.response && error.response.status === 500) {
+            console.log("Bi 500 roi nay");
+            try {
+                // Thông báo và bắt buộc F5 giao diện
+                if (window.confirm("Quyền của bạn vừa bị thay đổi bởi Quản trị viên! Bấm OK để tải lại giao diện.")) {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("user");
+                    localStorage.removeItem("role");
+                    localStorage.removeItem("permissions");
+                    window.href = '/login';
+                }
+            } catch (err) {
+                console.error("Lỗi khi tải lại quyền", err);
+            }
+        }
         return Promise.reject(error);
     }
 );

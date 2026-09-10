@@ -34,7 +34,7 @@ public class NotificationService {
 
         // gui real time cho recipient qua WebSocket
         messagingTemplate.convertAndSend(
-            "/topic/notifications/" + recipient.getId(), 
+            "/topic/notifications/" + recipient.getUsername(), 
             notificatioResponseDTO
         );
     }

@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.security.core.GrantedAuthority;
 
 import java.io.IOException;
 
@@ -49,7 +50,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 //     System.out.println("Permission for role " + roleName + ": " + perm);
                 // }
                 // 3. Biến thành mảng quyền của Spring Security
-                java.util.List<org.springframework.security.core.GrantedAuthority> authorities = permissions.stream()
+                java.util.List<GrantedAuthority> authorities = permissions.stream()
                         .map(org.springframework.security.core.authority.SimpleGrantedAuthority::new)
                         .collect(java.util.stream.Collectors.toList());
 

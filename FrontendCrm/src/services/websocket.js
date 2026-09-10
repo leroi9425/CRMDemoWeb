@@ -1,23 +1,24 @@
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
+import { Client } from "@stomp/stompjs";
 
 export const connectWebSocket = (userId, onNotification) => {
-
     const client = new Client({
-        webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+        brokerURL: "ws://localhost:8080/ws",
         onConnect: () => {
-            console.log('Connected to WebSocket');
-
+            console.log("Connected to WebSocket");
             client.subscribe(
                 `/topic/notifications/${userId}`,
                 (message) => {
-                    onNotification(JSON.parse(message.body));
+                    const notification = JSON.parse(message.body);
+                    console.log("Nhận notification:", notification);
+                    onNotification(notification);
                 }
             );
+        },
+        onStompError: (frame) => {
+            console.error("STOMP error:", frame);
         }
-
     });
-    client.activate();
 
+    client.activate();
     return client;
-}
+};

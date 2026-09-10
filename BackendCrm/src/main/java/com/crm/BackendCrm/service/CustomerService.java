@@ -1,5 +1,6 @@
 package com.crm.BackendCrm.service;
 
+import com.crm.BackendCrm.dto.Request.CustomerFilterRequestDTO;
 import com.crm.BackendCrm.dto.Request.CustomerRequestDTO;
 import com.crm.BackendCrm.dto.Response.ContactPositionResponseDTO;
 import com.crm.BackendCrm.dto.Response.ContactResponseDTO;
@@ -19,6 +20,7 @@ import com.crm.BackendCrm.repository.CustomerTmpRepository;
 import com.crm.BackendCrm.repository.EmailRepository;
 import com.crm.BackendCrm.repository.PositionRepository;
 import com.crm.BackendCrm.repository.UserRepository;
+import com.crm.BackendCrm.specification.CustomerSpecification;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -31,9 +33,12 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+// import org.springframework.boot.data.autoconfigure.web.DataWebProperties.Sort;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -61,6 +66,7 @@ public class CustomerService {
     private final EmailRepository emailRepository;
     private final ContactRepository contactRepository;
     private final PositionRepository positionRepository;
+    private final NotificationService notificationService;
     // private final NotificationService notificationService;
     
     private final int itemPerPage = 5;
@@ -69,6 +75,77 @@ public class CustomerService {
         Pageable pageable = PageRequest.of(index, itemPerPage);
         Page<Customer> customers = customerRepository.findByUserId(userId, pageable);
         return customers.map(this::toDTO);
+    }
+
+    public Page<CustomerResponseDTO> findAllPageFIlter(CustomerFilterRequestDTO cfDto, int index, Long userId){
+        Specification<Customer> spec = Specification.unrestricted();
+        if(cfDto.search() != null && !cfDto.search().isBlank()){
+            spec = spec.and(
+                CustomerSpecification.hasSearch(cfDto.search())
+            );
+        }
+        if(cfDto.gender() != null){
+            spec = spec.and(
+                CustomerSpecification.hasGender(
+                    cfDto.gender()
+                )
+            );
+        }
+        if(cfDto.customerName() != null && !cfDto.customerName().isBlank()){
+            spec = spec.and(
+                CustomerSpecification.hasCustomerName(
+                    cfDto.customerName()
+                )
+            );
+        }
+        if(cfDto.location() != null && ! cfDto.location().isBlank()){
+            spec = spec.and(
+                CustomerSpecification.hasLocation(
+                    cfDto.location()
+                )
+            );
+        }
+        if(cfDto.phoneNumber() != null && !cfDto.phoneNumber().isBlank()){
+            spec = spec.and(
+                CustomerSpecification.hasPhoneNumber(cfDto.phoneNumber())
+            );
+        }
+        if(cfDto.customerCode() != null && !cfDto.customerCode().isBlank()){
+            spec = spec.and(
+                CustomerSpecification.hasCustomerCode(cfDto.customerCode())
+            );
+        }
+        if(cfDto.fromDateOfBirth() != null && !cfDto.toDateOfBirth().isBlank()){
+            spec = spec.and(
+                CustomerSpecification.dateOfBirthFrom(cfDto.fromDateOfBirth())
+            );
+        }
+        if(cfDto.toDateOfBirth() != null && !cfDto.toDateOfBirth().isBlank()){
+            spec = spec.and(
+                CustomerSpecification.dateOfBirthTo(cfDto.toDateOfBirth())
+            );
+        }
+
+        Sort sort = createSort(cfDto);
+
+        spec = spec.and(CustomerSpecification.hasUserId(userId));
+
+        Pageable page = PageRequest.of(index, itemPerPage, sort);
+        Page<Customer> customersPage = customerRepository.findAll(spec,page);
+
+        return customersPage.map(this::toDTO);
+    }
+
+    private Sort createSort(CustomerFilterRequestDTO cfDto){
+        if(cfDto.sortField() == null || cfDto.sortField().isBlank()){
+            return Sort.unsorted();
+        }
+
+        if("DESC".equalsIgnoreCase(cfDto.sortDirection())){
+            return Sort.by(cfDto.sortField()).descending();
+        }
+
+        return Sort.by(cfDto.sortField()).ascending();
     }
 
     public List<CustomerResponseDTO> getAll() { 
@@ -273,9 +350,6 @@ public class CustomerService {
             }
         });
 
-        // System.out.println("Đang lưu " + tmpList.size() + " dòng vào bảng Tmp...");
-        // customerTmpRepository.saveAll(tmpList);
-
         String jsonCustomer = mapper.writeValueAsString(tmpCustomerList);
         String jsonEmail = mapper.writeValueAsString(tmpEmailList);
 
@@ -286,12 +360,6 @@ public class CustomerService {
     }
 
     public CustomerResponseDTO create(CustomerRequestDTO dto, Long senderId) {
-        // User sender = userRepository.findById(senderId)
-        //     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sender not found"));
-
-        // if (customerRepository.existsByEmail(dto.email())) {
-        //     throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
-        // }
         if (customerRepository.existsByPhoneNumber(dto.phoneNumber())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Phone number already exists");
         }
@@ -314,32 +382,36 @@ public class CustomerService {
         customer.setCompany(company);
         customer.setUser(user);
         customer.setCustomerCode(customerCode);
+        customerRepository.save(customer);
 
-
-        // bắt đầu gửi thông báo
-        // User recipient = userRepository.findById(dto.userId())
-        //     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        // notificationService.createAndSendNotification(
-        //     sender,
-        //     recipient,
-        //     "Bạn có khách hàng mới được thêm vào: " + dto.name()
-        // );
-        return toDTO(customerRepository.save(customer));
+        // bắt đầu gởi thông báo
+        User recipient = userRepository.findById(dto.userId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+            
+        // Nếu người tạo khác người nhận thì mới gởi thông báo
+        if (!senderId.equals(recipient.getId())) {
+            User sender = userRepository.findById(senderId).orElse(null);
+            if (sender != null) {
+                notificationService.createAndSendNotification(
+                    sender,
+                    recipient,
+                    "Bạn vừa được giao khách hàng mới: " + dto.name()
+                );
+            }
+        }
+        
+        return toDTO(customer);
     }
 
     public CustomerResponseDTO update(Long id, CustomerRequestDTO dto) {
         Customer customer = customerRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
-        
-        // if (!customer.getEmail().equals(dto.email()) && customerRepository.existsByEmail(dto.email())) {
-        //     throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
-        // }
+
         if (!customer.getPhoneNumber().equals(dto.phoneNumber()) && customerRepository.existsByPhoneNumber(dto.phoneNumber())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Phone number already exists");
         }
 
         customer.setCustomerName(dto.name());
-        // customer.setEmail(dto.email());
         customer.setPhoneNumber(dto.phoneNumber());
         customer.setDateOfBirth(dto.dateOfBirth());
         customer.setLocation(dto.location());
@@ -352,8 +424,20 @@ public class CustomerService {
     }
 
     private CustomerResponseDTO toDTO(Customer c) {
+        List<Email> emails = emailRepository.getAllByCustomerCode(c.getCustomerCode());
+        Email email = (emails.size() > 0) ? emails.get(0) : null;        
         return new CustomerResponseDTO(
-            c.getId(), c.getCustomerName(), c.getPhoneNumber(),c.getDateOfBirth(), c.getLocation(), c.isGender(), c.getCreatedAt(), c.getCompany().getId(),c.getUser().getId(), c.getCustomerCode()
+            c.getId(), 
+            c.getCustomerName(), 
+            c.getPhoneNumber(),
+            c.getDateOfBirth(), 
+            c.getLocation(), 
+            c.isGender(), 
+            c.getCreatedAt(), 
+            c.getCompany().getId(),
+            c.getUser().getId(), 
+            c.getCustomerCode(),
+            email != null ? email.getEmailAddress() : null
         );
     }
 

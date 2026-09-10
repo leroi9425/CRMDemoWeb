@@ -12,5 +12,6 @@ public record CustomerResponseDTO(
     LocalDateTime createdAt,
     Long companyId,
     Long userId,
-    String customerCode
+    String customerCode,
+    String email
 ) {}

@@ -8,13 +8,47 @@ import ProductView from "./components/ProductView";
 
 import RoleManagerTab from "./components/RoleManagerTab";
 import CompanyView from "./components/CompanyView";
+import { connectWebSocket } from "./services/websocket";
 
 function MainLayout() {
   const [activeTab, setActiveTab] = useState("customers");
   const { auth, logoutUser } = useAuth();
+  const [toastMessage, setToastMessage] = useState(null);
+
+  useEffect(() => {
+    // Chỉ kết nối khi đã có auth.username
+    if (!auth || !auth.username) return;
+    
+    const client = connectWebSocket(
+        auth.username,
+        (notification) => {
+            console.log("🔔 Notification:", notification);
+            // Hiện Toast nổi lên
+            setToastMessage(notification.message);
+            // 5 giây sau tự tắt
+            setTimeout(() => setToastMessage(null), 5000);
+        }
+    );
+
+    return () => {
+        client.deactivate();
+    };
+  }, [auth]);
 
   return (
-    <div className="text-slate-800 antialiased min-h-screen w-full flex flex-col bg-slate-50">
+    <div className="text-slate-800 antialiased min-h-screen w-full flex flex-col bg-slate-50 relative">
+      {/* KHỐI TOAST THÔNG BÁO NỔI LÊN */}
+      <div className={`fixed top-4 right-4 z-[9999] transition-all duration-500 transform ${toastMessage ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"}`}>
+        <div className="bg-white border-l-4 border-blue-500 shadow-xl rounded-md p-4 flex items-center max-w-sm">
+          <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3 flex-shrink-0">
+            <i className="fa-solid fa-bell animate-wiggle"></i>
+          </div>
+          <div>
+            <h4 className="text-slate-800 font-bold text-sm">Thông báo mới</h4>
+            <p className="text-slate-600 text-sm mt-0.5">{toastMessage}</p>
+          </div>
+        </div>
+      </div>
       <nav className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
