@@ -10,5 +10,6 @@ public record CustomerRequestDTO(
     @NotBlank String location,
     @NotNull Boolean gender,
     @NotNull Long companyId,
-    @NotNull Long userId
+    @NotNull Long userId,
+    String email
 ) {}

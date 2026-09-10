@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getCustomers, createCustomer, updateCustomer, deleteCustomer, getCustomersPage, getCustomerDetail, filterCustomersPage } from "../api/customerApi";
+import { getCustomers, createCustomer, updateCustomer, deleteCustomer, getCustomersPage, getCustomerDetail, filterCustomersPage, exportCustomer } from "../api/customerApi";
 import { useAuth } from "../context/AuthContext";
 import ExcelInOutPut from "./ExcelInOutPut";
 
@@ -174,6 +174,40 @@ export default function CustomerView() {
             .catch(() => showToast("Lỗi khi sắp xếp", "danger"));
     };
 
+    const handleExport = async () => {
+        try{
+            const payload = {
+                ...filterData,
+                gender:
+                    filterData.gender === ""
+                        ? null
+                        : filterData.gender === "true",
+                fromDateOfBirth:
+                    filterData.fromDateOfBirth || null,
+                toDateOfBirth:
+                    filterData.toDateOfBirth || null,
+            };
+
+            const res = await exportCustomer(payload);
+
+            const url = window.URL.createObjectURL(
+                new Blob([res.data])
+            );
+
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "customer.xlsx";
+
+            document.body.appendChild(link);
+            link.click();
+
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        }catch(error){
+            console.error("export loi: ", error)
+        };
+    };
+    
     const renderSortIcon = (field) => {
         if (filterData.sortField !== field || !filterData.sortDirection) {
             return <i className="fa-solid fa-sort ml-1 text-slate-300"></i>;
@@ -258,11 +292,15 @@ export default function CustomerView() {
                         className="bg-primary hover:bg-blue-600 text-white text-sm font-medium py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 whitespace-nowrap">
                             Tìm kiếm
                         </button>
+                        <button 
+                        onClick={() => setShowFilter(!showFilter)} 
+                        className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex items-center whitespace-nowrap">
+                            <i className="fa-solid fa-filter"></i>
+                        </button>
                     </div>
 
                     {/* Hàng nút bấm nằm bên dưới */}
                     <div className="flex items-center space-x-3">
-                        <button onClick={() => setShowFilter(!showFilter)} className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex items-center whitespace-nowrap"><i className="fa-solid fa-filter mr-2"></i> Bộ lọc</button>
                         {auth?.permissions?.includes('THEM_KHACH_HANG') && (
                             <>
                                 <button onClick={() => openModal()} className="bg-primary hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex items-center whitespace-nowrap">
@@ -273,6 +311,12 @@ export default function CustomerView() {
                                     className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex items-center whitespace-nowrap"
                                 >
                                     <i className="fa-solid fa-file-excel mr-2"></i> Thêm bằng file Excel
+                                </button>
+                                <button 
+                                    onClick={() => handleExport(true)} 
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex items-center whitespace-nowrap"
+                                >
+                                    <i className="fa-solid fa-file-excel mr-2"></i> Xuất ra file Excel
                                 </button>
                             </>
                         )}

@@ -49,4 +49,7 @@ public class Customer {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    @Column
+    private String emails;
 }

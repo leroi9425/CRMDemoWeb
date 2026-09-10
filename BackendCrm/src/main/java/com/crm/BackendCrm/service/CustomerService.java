@@ -12,25 +12,31 @@ import com.crm.BackendCrm.entity.User;
 import com.crm.BackendCrm.entity.Company;
 import com.crm.BackendCrm.entity.Contact;
 import com.crm.BackendCrm.entity.Email;
+import com.crm.BackendCrm.entity.MapExcel;
 import com.crm.BackendCrm.entity.Position;
 import com.crm.BackendCrm.repository.CompanyRepository;
 import com.crm.BackendCrm.repository.ContactRepository;
 import com.crm.BackendCrm.repository.CustomerRepository;
 import com.crm.BackendCrm.repository.CustomerTmpRepository;
 import com.crm.BackendCrm.repository.EmailRepository;
+import com.crm.BackendCrm.repository.MapExcelRepository;
 import com.crm.BackendCrm.repository.PositionRepository;
 import com.crm.BackendCrm.repository.UserRepository;
 import com.crm.BackendCrm.specification.CustomerSpecification;
 
+import org.apache.poi.ss.formula.functions.Column;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Row;
 
 import lombok.RequiredArgsConstructor;
 
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 // import org.springframework.boot.data.autoconfigure.web.DataWebProperties.Sort;
@@ -40,6 +46,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
@@ -48,9 +55,9 @@ import java.util.Map;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -67,10 +74,12 @@ public class CustomerService {
     private final EmailRepository emailRepository;
     private final ContactRepository contactRepository;
     private final PositionRepository positionRepository;
+    private final MapExcelRepository mapExcelRepository;
+    
     private final NotificationService notificationService;
 
     private Sort sort;
-    Specification<Customer> spec = Specification.unrestricted();
+    Specification<Customer> spec ;
     // private final NotificationService notificationService;
     
     private final int itemPerPage = 5;
@@ -80,16 +89,111 @@ public class CustomerService {
         Page<Customer> customers = customerRepository.findByUserId(userId, pageable);
         return customers.map(this::toDTO);
     }
-    public List<CustomerResponseDTO> findAllFilter(CustomerFilterRequestDTO cfDto, Long userId){
-        filterByUserId(cfDto, userId);
+    public List<Customer> findAllFilter(CustomerFilterRequestDTO cfDto, Long userId){
         
-        List<Customer> customers = customerRepository.findAll(spec, sort);
+        Specification<Customer> spec = Specification.unrestricted();
+        filterByUserId(cfDto, userId);
+        List<Customer> customers = customerRepository.findAll(spec);     // đây là danh sách đã filter có cả email   
+        
+        return customers;
+    }
 
-        return customers.stream().map(this::toDTO).collect(Collectors.toList());
+    public byte[] createExcel(List<Customer> customers, List<String> fields) throws IOException{
+        List<MapExcel> mapExcels = mapExcelRepository.findAll();
+        Map<String, String> headerMap = mapExcels.stream().collect(Collectors.toMap(
+                                            MapExcel::getPropertieName,
+                                            MapExcel::getColumnName
+                                        ));
+        
+        List<Contact> contacts = contactRepository.findAll();
+        Map<String, List<Contact>> contactMap = contacts.stream()
+                                                .filter(contact -> contact.getCustomerCode() != null)
+                                                .collect(Collectors.groupingBy(Contact::getCustomerCode));
+
+        SXSSFWorkbook workbook = new SXSSFWorkbook(100);
+
+        Sheet sheet = workbook.createSheet("Customers");
+
+        // Header
+        Map<String, Integer> indexColumn = new HashMap<>();
+        Row header = sheet.createRow(0);
+        for(int i=0 ; i<fields.size() ; i++){
+            String columnName = fields.get(i);
+            if(columnName == "id"){
+                header.createCell(i).setCellValue("ID");
+                indexColumn.put(columnName, i);
+            }
+            if(columnName == "name"){
+                header.createCell(i).setCellValue("Tên khách hàng");
+                indexColumn.put(columnName, i);
+            }
+            if(columnName == "email"){
+                header.createCell(i).setCellValue("Email");
+                indexColumn.put(columnName, i);
+            }
+            if(columnName == "phoneNumber"){
+                header.createCell(i).setCellValue("Số điện thoại");
+                indexColumn.put(columnName, i);
+            }
+            if(columnName == "location"){
+                header.createCell(i).setCellValue("Địa chỉ");
+                indexColumn.put(columnName, i);
+            }
+            if(columnName == "dateOfBirth"){
+                header.createCell(i).setCellValue("Ngày sinh");
+                indexColumn.put(columnName, i);
+            }
+            if(columnName == "customerCode"){
+                header.createCell(i).setCellValue("Mã khách");
+                indexColumn.put(columnName, i);
+            }
+            if(columnName == "company"){
+                header.createCell(i).setCellValue("Công ty");
+                indexColumn.put(columnName, i);
+            }
+            if(columnName == "contacts"){
+                header.createCell(i).setCellValue("Liên hệ");
+                indexColumn.put(columnName, i);
+            }
+        }
+
+        int rowIndex = 1;
+
+        for (Customer customer : customers) {
+
+            Row row = sheet.createRow(rowIndex++);
+
+            row.createCell(0).setCellValue(customer.getId());
+            row.createCell(1).setCellValue(customer.getCustomerName());
+            row.createCell(2).setCellValue(customer.getEmail());
+            row.createCell(3).setCellValue(customer.getPhoneNumber());
+            row.createCell(4).setCellValue(customer.getLocation());
+            row.createCell(5).setCellValue(customer.getDateOfBirth());
+            row.createCell(6).setCellValue(customer.getCustomerCode());
+            row.createCell(7).setCellValue(customer.getCompany().getName());
+
+            
+            List<Contact> cusContacts = contactMap.getOrDefault(customer.getCustomerCode(), new ArrayList<>());
+            String contactRow = "";
+            for(Contact c : cusContacts){
+                contactRow +=  c.getPosition().getNamePosition() + "-" +c.getContactName() +" SĐT: " + c.getPhoneNumber() + " Email: " + c.getEmail() + "\n";
+            }
+            row.createCell(8).setCellValue(contactRow);
+        }
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream(); // tạo 1 vùng ram để chứa các byte của file
+
+        workbook.write(outputStream);          //  ghi vào vùng nhớ đó
+        workbook.dispose();      // xóa các file tạm mà row từ ram đi vào file tạm
+        workbook.close();
+
+        return outputStream.toByteArray();
     }
 
     public Page<CustomerResponseDTO> findAllPageFIlter(CustomerFilterRequestDTO cfDto, int index, Long userId){
+        spec = Specification.unrestricted();
         filterByUserId(cfDto, userId);
+        sort = createSort(cfDto);
 
         Pageable page = PageRequest.of(index, itemPerPage, sort);
         Page<Customer> customersPage = customerRepository.findAll(spec,page);
@@ -398,7 +502,8 @@ public class CustomerService {
             c.getCompany().getId(),
             c.getUser().getId(), 
             c.getCustomerCode(),
-            email != null ? email.getEmailAddress() : null
+            // email != null ? c.getEm : null
+            c.getEmail()
         );
     }
 
@@ -458,7 +563,6 @@ public class CustomerService {
                 CustomerSpecification.dateOfBirthTo(cfDto.toDateOfBirth())
             );
         }
-        sort = createSort(cfDto);
         spec = spec.and(CustomerSpecification.hasUserId(userId));
     }
 }

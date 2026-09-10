@@ -4,6 +4,7 @@ import com.crm.BackendCrm.dto.Request.CustomerFilterRequestDTO;
 import com.crm.BackendCrm.dto.Request.CustomerRequestDTO;
 import com.crm.BackendCrm.dto.Response.CustomerDetailResponseDTO;
 import com.crm.BackendCrm.dto.Response.CustomerResponseDTO;
+import com.crm.BackendCrm.entity.Customer;
 import com.crm.BackendCrm.security.JwtUtils;
 import com.crm.BackendCrm.service.CustomerService;
 
@@ -15,10 +16,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.Page;
+
 
 @RestController
 @RequestMapping("/api/customers")
@@ -33,6 +40,23 @@ public class CustomerController {
     // public List<CustomerResponseDTO> getAll() {
     //     return customerService.getAll();
     // }
+    @PostMapping("/export")
+    public ResponseEntity exportFile(@RequestBody CustomerFilterRequestDTO cfDto, @RequestHeader("Authorization") String authHeader) throws IOException{
+        String jwt = authHeader.substring(7);
+        Long userId = jwtUtils.extractUserId(jwt);
+        
+        List<Customer> customers = customerService.findAllFilter(cfDto, userId);
+        List<String> tmp = new ArrayList<>();
+        byte[] excel = customerService.createExcel(customers, tmp);
+
+        return ResponseEntity.ok().header(
+                HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=customers.xlsx"
+            ) .contentType(
+                MediaType.APPLICATION_OCTET_STREAM
+            )
+            .body(excel);
+    }
 
     @PostMapping("/filter/page={index}")
     public Page<CustomerResponseDTO> getPageFilter (
