@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.ArrayList;
 
@@ -67,6 +68,9 @@ public class CustomerService {
     private final ContactRepository contactRepository;
     private final PositionRepository positionRepository;
     private final NotificationService notificationService;
+
+    private Sort sort;
+    Specification<Customer> spec = Specification.unrestricted();
     // private final NotificationService notificationService;
     
     private final int itemPerPage = 5;
@@ -76,59 +80,16 @@ public class CustomerService {
         Page<Customer> customers = customerRepository.findByUserId(userId, pageable);
         return customers.map(this::toDTO);
     }
+    public List<CustomerResponseDTO> findAllFilter(CustomerFilterRequestDTO cfDto, Long userId){
+        filterByUserId(cfDto, userId);
+        
+        List<Customer> customers = customerRepository.findAll(spec, sort);
+
+        return customers.stream().map(this::toDTO).collect(Collectors.toList());
+    }
 
     public Page<CustomerResponseDTO> findAllPageFIlter(CustomerFilterRequestDTO cfDto, int index, Long userId){
-        Specification<Customer> spec = Specification.unrestricted();
-        if(cfDto.search() != null && !cfDto.search().isBlank()){
-            spec = spec.and(
-                CustomerSpecification.hasSearch(cfDto.search())
-            );
-        }
-        if(cfDto.gender() != null){
-            spec = spec.and(
-                CustomerSpecification.hasGender(
-                    cfDto.gender()
-                )
-            );
-        }
-        if(cfDto.customerName() != null && !cfDto.customerName().isBlank()){
-            spec = spec.and(
-                CustomerSpecification.hasCustomerName(
-                    cfDto.customerName()
-                )
-            );
-        }
-        if(cfDto.location() != null && ! cfDto.location().isBlank()){
-            spec = spec.and(
-                CustomerSpecification.hasLocation(
-                    cfDto.location()
-                )
-            );
-        }
-        if(cfDto.phoneNumber() != null && !cfDto.phoneNumber().isBlank()){
-            spec = spec.and(
-                CustomerSpecification.hasPhoneNumber(cfDto.phoneNumber())
-            );
-        }
-        if(cfDto.customerCode() != null && !cfDto.customerCode().isBlank()){
-            spec = spec.and(
-                CustomerSpecification.hasCustomerCode(cfDto.customerCode())
-            );
-        }
-        if(cfDto.fromDateOfBirth() != null && !cfDto.toDateOfBirth().isBlank()){
-            spec = spec.and(
-                CustomerSpecification.dateOfBirthFrom(cfDto.fromDateOfBirth())
-            );
-        }
-        if(cfDto.toDateOfBirth() != null && !cfDto.toDateOfBirth().isBlank()){
-            spec = spec.and(
-                CustomerSpecification.dateOfBirthTo(cfDto.toDateOfBirth())
-            );
-        }
-
-        Sort sort = createSort(cfDto);
-
-        spec = spec.and(CustomerSpecification.hasUserId(userId));
+        filterByUserId(cfDto, userId);
 
         Pageable page = PageRequest.of(index, itemPerPage, sort);
         Page<Customer> customersPage = customerRepository.findAll(spec,page);
@@ -447,5 +408,57 @@ public class CustomerService {
 
     public String createCustomerCode(int excelRowIndex) {
         return "KH" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + excelRowIndex;
+    }
+    
+
+    private void filterByUserId(CustomerFilterRequestDTO cfDto, Long userId){
+        if(cfDto.search() != null && !cfDto.search().isBlank()){
+            spec = spec.and(
+                CustomerSpecification.hasSearch(cfDto.search())
+            );
+        }
+        if(cfDto.gender() != null){
+            spec = spec.and(
+                CustomerSpecification.hasGender(
+                    cfDto.gender()
+                )
+            );
+        }
+        if(cfDto.customerName() != null && !cfDto.customerName().isBlank()){
+            spec = spec.and(
+                CustomerSpecification.hasCustomerName(
+                    cfDto.customerName()
+                )
+            );
+        }
+        if(cfDto.location() != null && ! cfDto.location().isBlank()){
+            spec = spec.and(
+                CustomerSpecification.hasLocation(
+                    cfDto.location()
+                )
+            );
+        }
+        if(cfDto.phoneNumber() != null && !cfDto.phoneNumber().isBlank()){
+            spec = spec.and(
+                CustomerSpecification.hasPhoneNumber(cfDto.phoneNumber())
+            );
+        }
+        if(cfDto.customerCode() != null && !cfDto.customerCode().isBlank()){
+            spec = spec.and(
+                CustomerSpecification.hasCustomerCode(cfDto.customerCode())
+            );
+        }
+        if(cfDto.fromDateOfBirth() != null && !cfDto.toDateOfBirth().isBlank()){
+            spec = spec.and(
+                CustomerSpecification.dateOfBirthFrom(cfDto.fromDateOfBirth())
+            );
+        }
+        if(cfDto.toDateOfBirth() != null && !cfDto.toDateOfBirth().isBlank()){
+            spec = spec.and(
+                CustomerSpecification.dateOfBirthTo(cfDto.toDateOfBirth())
+            );
+        }
+        sort = createSort(cfDto);
+        spec = spec.and(CustomerSpecification.hasUserId(userId));
     }
 }
