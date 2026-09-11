@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { getCustomers, createCustomer, updateCustomer, deleteCustomer, getCustomersPage, getCustomerDetail, filterCustomersPage, exportCustomer } from "../api/customerApi";
+import { getCustomers, createCustomer, updateCustomer, deleteCustomer, getCustomersPage, getCustomerDetail, filterCustomersPage, exportCustomer, getExportTemplates, saveExportTemplate } from "../api/customerApi";
 import { useAuth } from "../context/AuthContext";
 import ExcelInOutPut from "./ExcelInOutPut";
+import ExportExcelModal from "./ExportExcelModal";
 
 export default function CustomerView() {
     const [customers, setCustomers] = useState([]);
@@ -32,6 +33,10 @@ export default function CustomerView() {
     // State để điều khiển màn hình Import Excel
     const [isImportMode, setIsImportMode] = useState(false);
 
+    // State cho Modal Export
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+
     const fetchCustomers = async () => {
         try {
             console.log("filter data" + filterData);
@@ -55,7 +60,7 @@ export default function CustomerView() {
     }, [currentPage]);
 
     const showToast = (message, type = "success") => {
-        const id = Date.now();
+        const id = Date.now() + Math.random().toString(36).substr(2, 9);
         setToasts(prev => [...prev, { id, message, type }]);
         setTimeout(() => {
             setToasts(prev => prev.filter(t => t.id !== id));
@@ -174,40 +179,10 @@ export default function CustomerView() {
             .catch(() => showToast("Lỗi khi sắp xếp", "danger"));
     };
 
-    const handleExport = async () => {
-        try{
-            const payload = {
-                ...filterData,
-                gender:
-                    filterData.gender === ""
-                        ? null
-                        : filterData.gender === "true",
-                fromDateOfBirth:
-                    filterData.fromDateOfBirth || null,
-                toDateOfBirth:
-                    filterData.toDateOfBirth || null,
-            };
-
-            const res = await exportCustomer(payload);
-
-            const url = window.URL.createObjectURL(
-                new Blob([res.data])
-            );
-
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = "customer.xlsx";
-
-            document.body.appendChild(link);
-            link.click();
-
-            link.remove();
-            window.URL.revokeObjectURL(url);
-        }catch(error){
-            console.error("export loi: ", error)
-        };
+    const openExportModal = () => {
+        setIsExportModalOpen(true);
     };
-    
+
     const renderSortIcon = (field) => {
         if (filterData.sortField !== field || !filterData.sortDirection) {
             return <i className="fa-solid fa-sort ml-1 text-slate-300"></i>;
@@ -313,7 +288,7 @@ export default function CustomerView() {
                                     <i className="fa-solid fa-file-excel mr-2"></i> Thêm bằng file Excel
                                 </button>
                                 <button 
-                                    onClick={() => handleExport(true)} 
+                                    onClick={openExportModal} 
                                     className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 flex items-center whitespace-nowrap"
                                 >
                                     <i className="fa-solid fa-file-excel mr-2"></i> Xuất ra file Excel
@@ -408,32 +383,46 @@ export default function CustomerView() {
             
             <div className="bg-white shadow-sm rounded-xl border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full table-fixed whitespace-nowrap">
-                                                                        <thead>
+                    <table className="w-full min-w-max table-auto whitespace-nowrap">
+                        <thead>
                             <tr className="bg-slate-50 border-b border-slate-200 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                <th className="px-6 py-4 w-[5%]">STT</th>
-                                <th className="px-6 py-4 w-[25%] cursor-pointer hover:bg-slate-200 transition-colors select-none" onClick={() => handleSort('customerName')} title="Sắp xếp theo Tên">
+                                <th className="sticky left-0 bg-slate-50 px-6 py-4 min-w-[80px] z-10">Mã khách hàng</th>
+                                <th className="sticky left-[170px] bg-slate-50 px-6 py-4 min-w-[200px] cursor-pointer hover:bg-slate-200 transition-colors select-none z-10" onClick={() => handleSort('customerName')} title="Sắp xếp theo Tên">
                                     Tên khách hàng {renderSortIcon('customerName')}
                                 </th>
-                                <th className="px-6 py-4 w-[25%] cursor-pointer hover:bg-slate-200 transition-colors select-none" onClick={() => handleSort('phoneNumber')} title="Sắp xếp theo SĐT">
+                                <th className="px-6 py-4 min-w-[200px] cursor-pointer hover:bg-slate-200 transition-colors select-none" onClick={() => handleSort('phoneNumber')} title="Sắp xếp theo SĐT">
                                     Số điện thoại {renderSortIcon('phoneNumber')}
                                 </th>
-                                <th className="px-6 py-4 w-[15%] cursor-pointer hover:bg-slate-200 transition-colors select-none" onClick={() => handleSort('dateOfBirth')} title="Sắp xếp theo Ngày sinh">
+                                <th className="px-6 py-4 min-w-[150px] cursor-pointer hover:bg-slate-200 transition-colors select-none" onClick={() => handleSort('dateOfBirth')} title="Sắp xếp theo Ngày sinh">
                                     Ngày sinh {renderSortIcon('dateOfBirth')}
                                 </th>
-                                <th className="px-6 py-4 w-[15%] cursor-pointer hover:bg-slate-200 transition-colors select-none" onClick={() => handleSort('location')} title="Sắp xếp theo Khu vực">
+                                <th className="px-6 py-4 min-w-[150px] cursor-pointer hover:bg-slate-200 transition-colors select-none" onClick={() => handleSort('location')} title="Sắp xếp theo Khu vực">
                                     Khu vực {renderSortIcon('location')}
                                 </th>
-                                <th className="px-6 py-4 w-[15%] text-right">Thao tác</th>
+                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
+                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
+                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
+                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
+                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
+                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
+                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
+                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
+                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
+                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
+                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
+                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
+                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
+                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
+                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 text-sm">
                             {filteredCustomers.map((customer, i)=> (
                                 <tr key={customer.id} onClick={() => openDetailModal(customer.id)} className="hover:bg-slate-50 transition-colors group cursor-pointer">
-                                    <td className="px-6 py-4 whitespace-nowrap text-slate-500 font-mono text-xs">#{i+1}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="sticky left-0 bg-white group-hover:bg-slate-50 px-6 py-4 whitespace-nowrap text-slate-500 font-mono text-xs z-10 transition-colors">#{customer.customerCode}</td>
+                                    <td className="sticky left-[170px] bg-white group-hover:bg-slate-50 px-6 py-4 whitespace-nowrap z-10 transition-colors">
                                         <div className="flex items-center">
-                                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
+                                            <div className="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
                                                 {getInitials(customer.name)}
                                             </div>
                                             <div className="ml-4">
@@ -446,7 +435,7 @@ export default function CustomerView() {
                                         <div className="text-slate-700"><i className="fa-solid fa-phone text-slate-400 mr-2 w-4"></i>{formatPhoneNumber(customer.phoneNumber)}</div>
                                         <div className="text-slate-500 text-xs mt-1"><i className="fa-solid fa-envelope text-slate-400 mr-2 w-4"></i>{customer.email || 'N/A'}</div>
                                     </td>
-                                                                        <td className="px-6 py-4 whitespace-nowrap text-slate-700">
+                                        <td className="px-6 py-4 whitespace-nowrap text-slate-700">
                                         <i className="fa-solid fa-calendar text-slate-400 mr-2"></i>{customer.dateOfBirth}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-slate-700">
@@ -470,8 +459,9 @@ export default function CustomerView() {
                             ))}
                         </tbody>
                     </table>
+                </div>
 
-                    {/* Pagination Controls */}
+                {/* Pagination Controls */}
                     <div className="flex items-center justify-between px-6 py-3 border-t border-slate-200 bg-slate-50">
                         <div className="text-sm text-slate-500">
                             Trang {currentPage + 1} / {totalPage}
@@ -538,7 +528,6 @@ export default function CustomerView() {
                             </button>
                         </div>
                     )}
-                </div>
             </div>
 
             {/* Modal Edit/Add */}
@@ -714,6 +703,13 @@ export default function CustomerView() {
                     </div>
                 </div>
             </div>
+
+            <ExportExcelModal 
+                isOpen={isExportModalOpen} 
+                onClose={() => setIsExportModalOpen(false)} 
+                filterData={filterData} 
+                showToast={showToast} 
+            />
 
             {/* Toasts */}
             <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">

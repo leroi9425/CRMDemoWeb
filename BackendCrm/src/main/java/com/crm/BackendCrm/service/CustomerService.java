@@ -24,7 +24,6 @@ import com.crm.BackendCrm.repository.PositionRepository;
 import com.crm.BackendCrm.repository.UserRepository;
 import com.crm.BackendCrm.specification.CustomerSpecification;
 
-import org.apache.poi.ss.formula.functions.Column;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
@@ -36,7 +35,6 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 // import org.springframework.boot.data.autoconfigure.web.DataWebProperties.Sort;
@@ -57,7 +55,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -78,8 +75,6 @@ public class CustomerService {
     
     private final NotificationService notificationService;
 
-    private Sort sort;
-    Specification<Customer> spec ;
     // private final NotificationService notificationService;
     
     private final int itemPerPage = 5;
@@ -90,9 +85,7 @@ public class CustomerService {
         return customers.map(this::toDTO);
     }
     public List<Customer> findAllFilter(CustomerFilterRequestDTO cfDto, Long userId){
-        
-        Specification<Customer> spec = Specification.unrestricted();
-        filterByUserId(cfDto, userId);
+        Specification<Customer> spec = filterByUserId(cfDto, userId);
         List<Customer> customers = customerRepository.findAll(spec);     // đây là danh sách đã filter có cả email   
         
         return customers;
@@ -115,46 +108,16 @@ public class CustomerService {
         Sheet sheet = workbook.createSheet("Customers");
 
         // Header
-        Map<String, Integer> indexColumn = new HashMap<>();
         Row header = sheet.createRow(0);
         for(int i=0 ; i<fields.size() ; i++){
             String columnName = fields.get(i);
-            if(columnName == "id"){
-                header.createCell(i).setCellValue("ID");
-                indexColumn.put(columnName, i);
+            String headerTitle = headerMap.get(columnName);
+            if (headerTitle == null) {
+                // Fallback nếu trong DB map_excel sếp chưa thêm dòng này
+                if (columnName.equals("gender")) headerTitle = "Giới tính";
+                else headerTitle = columnName; 
             }
-            if(columnName == "name"){
-                header.createCell(i).setCellValue("Tên khách hàng");
-                indexColumn.put(columnName, i);
-            }
-            if(columnName == "email"){
-                header.createCell(i).setCellValue("Email");
-                indexColumn.put(columnName, i);
-            }
-            if(columnName == "phoneNumber"){
-                header.createCell(i).setCellValue("Số điện thoại");
-                indexColumn.put(columnName, i);
-            }
-            if(columnName == "location"){
-                header.createCell(i).setCellValue("Địa chỉ");
-                indexColumn.put(columnName, i);
-            }
-            if(columnName == "dateOfBirth"){
-                header.createCell(i).setCellValue("Ngày sinh");
-                indexColumn.put(columnName, i);
-            }
-            if(columnName == "customerCode"){
-                header.createCell(i).setCellValue("Mã khách");
-                indexColumn.put(columnName, i);
-            }
-            if(columnName == "company"){
-                header.createCell(i).setCellValue("Công ty");
-                indexColumn.put(columnName, i);
-            }
-            if(columnName == "contacts"){
-                header.createCell(i).setCellValue("Liên hệ");
-                indexColumn.put(columnName, i);
-            }
+            header.createCell(i).setCellValue(headerTitle);
         }
 
         int rowIndex = 1;
@@ -163,22 +126,25 @@ public class CustomerService {
 
             Row row = sheet.createRow(rowIndex++);
 
-            row.createCell(0).setCellValue(customer.getId());
-            row.createCell(1).setCellValue(customer.getCustomerName());
-            row.createCell(2).setCellValue(customer.getEmail());
-            row.createCell(3).setCellValue(customer.getPhoneNumber());
-            row.createCell(4).setCellValue(customer.getLocation());
-            row.createCell(5).setCellValue(customer.getDateOfBirth());
-            row.createCell(6).setCellValue(customer.getCustomerCode());
-            row.createCell(7).setCellValue(customer.getCompany().getName());
+            for(int i = 0; i < fields.size(); i++){
 
-            
-            List<Contact> cusContacts = contactMap.getOrDefault(customer.getCustomerCode(), new ArrayList<>());
-            String contactRow = "";
-            for(Contact c : cusContacts){
-                contactRow +=  c.getPosition().getNamePosition() + "-" +c.getContactName() +" SĐT: " + c.getPhoneNumber() + " Email: " + c.getEmail() + "\n";
+                if(fields.get(i).equals("name")) row.createCell(i).setCellValue(customer.getCustomerName());
+                else if(fields.get(i).equals("email")) row.createCell(i).setCellValue(customer.getEmail());
+                else if(fields.get(i).equals("phoneNumber")) row.createCell(i).setCellValue(customer.getPhoneNumber());
+                else if(fields.get(i).equals("location")) row.createCell(i).setCellValue(customer.getLocation());
+                else if(fields.get(i).equals("dateOfBirth")) row.createCell(i).setCellValue(customer.getDateOfBirth());
+                else if(fields.get(i).equals("customerCode")) row.createCell(i).setCellValue(customer.getCustomerCode());
+                else if(fields.get(i).equals("company")) row.createCell(i).setCellValue(customer.getCompany() != null ? customer.getCompany().getName() : "");
+                else if(fields.get(i).equals("gender")) row.createCell(i).setCellValue(customer.isGender() ? "Nam" : "Nữ");
+                else if(fields.get(i).equals("contacts")){
+                    List<Contact> cusContacts = contactMap.getOrDefault(customer.getCustomerCode(), new ArrayList<>());
+                    String contactRow = "";
+                    for(Contact c : cusContacts){
+                        contactRow +=  c.getPosition().getNamePosition() + "-" +c.getContactName() +" SĐT: " + c.getPhoneNumber() + " Email: " + c.getEmail() + "\n";
+                    }
+                    row.createCell(i).setCellValue(contactRow);
+                }
             }
-            row.createCell(8).setCellValue(contactRow);
         }
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream(); // tạo 1 vùng ram để chứa các byte của file
@@ -191,9 +157,8 @@ public class CustomerService {
     }
 
     public Page<CustomerResponseDTO> findAllPageFIlter(CustomerFilterRequestDTO cfDto, int index, Long userId){
-        spec = Specification.unrestricted();
-        filterByUserId(cfDto, userId);
-        sort = createSort(cfDto);
+        Specification<Customer> spec = filterByUserId(cfDto, userId);        
+        Sort sort = createSort(cfDto);
 
         Pageable page = PageRequest.of(index, itemPerPage, sort);
         Page<Customer> customersPage = customerRepository.findAll(spec,page);
@@ -489,8 +454,6 @@ public class CustomerService {
     }
 
     private CustomerResponseDTO toDTO(Customer c) {
-        List<Email> emails = emailRepository.getAllByCustomerCode(c.getCustomerCode());
-        Email email = (emails.size() > 0) ? emails.get(0) : null;        
         return new CustomerResponseDTO(
             c.getId(), 
             c.getCustomerName(), 
@@ -514,9 +477,9 @@ public class CustomerService {
     public String createCustomerCode(int excelRowIndex) {
         return "KH" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + excelRowIndex;
     }
-    
 
-    private void filterByUserId(CustomerFilterRequestDTO cfDto, Long userId){
+    private Specification<Customer> filterByUserId(CustomerFilterRequestDTO cfDto, Long userId){
+        Specification<Customer> spec = Specification.unrestricted();
         if(cfDto.search() != null && !cfDto.search().isBlank()){
             spec = spec.and(
                 CustomerSpecification.hasSearch(cfDto.search())
@@ -564,5 +527,7 @@ public class CustomerService {
             );
         }
         spec = spec.and(CustomerSpecification.hasUserId(userId));
+
+        return spec;
     }
 }

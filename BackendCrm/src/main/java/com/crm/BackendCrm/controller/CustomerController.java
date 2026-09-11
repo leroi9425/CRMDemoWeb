@@ -19,7 +19,6 @@ import java.io.IOException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -41,13 +40,16 @@ public class CustomerController {
     //     return customerService.getAll();
     // }
     @PostMapping("/export")
-    public ResponseEntity exportFile(@RequestBody CustomerFilterRequestDTO cfDto, @RequestHeader("Authorization") String authHeader) throws IOException{
+    public ResponseEntity<byte[]> exportFile(
+        @RequestBody CustomerFilterRequestDTO cfDto, 
+        @RequestHeader("Authorization") String authHeader,
+        @RequestParam List<String> fields
+    ) throws IOException{
         String jwt = authHeader.substring(7);
         Long userId = jwtUtils.extractUserId(jwt);
         
         List<Customer> customers = customerService.findAllFilter(cfDto, userId);
-        List<String> tmp = new ArrayList<>();
-        byte[] excel = customerService.createExcel(customers, tmp);
+        byte[] excel = customerService.createExcel(customers, fields);
 
         return ResponseEntity.ok().header(
                 HttpHeaders.CONTENT_DISPOSITION,

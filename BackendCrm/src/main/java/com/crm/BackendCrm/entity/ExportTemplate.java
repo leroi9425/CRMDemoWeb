@@ -1,5 +1,6 @@
 package com.crm.BackendCrm.entity;
 
+import jakarta.annotation.Generated;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -12,19 +13,22 @@ import lombok.Setter;
 import jakarta.persistence.GenerationType;
 
 @Entity
-@Table(name = "emails")
-@NoArgsConstructor 
 @AllArgsConstructor 
-@Getter
-@Setter
-public class Email {
-    @Id
+@NoArgsConstructor 
+@Getter 
+@Setter 
+@Table (name = "export_templates")
+public class ExportTemplate {
+    @Id 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column (nullable = false, unique = true)
-    private String emailAddress;
+    @Column (nullable = false)
+    private String name;
 
     @Column (nullable = false)
-    private String customerCode;
+    private String fields;
+
+    @Column (nullable = false)
+    private Long userId;
 }

@@ -25,6 +25,7 @@ public class Contact {
 
     private String email;
 
+    @ManyToOne
     @JoinColumn(name = "customer_code", nullable = false)
     private String customerCode;
 

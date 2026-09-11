@@ -63,6 +63,7 @@ axiosInstance.interceptors.response.use(
                     localStorage.removeItem("user");
                     localStorage.removeItem("role");
                     localStorage.removeItem("permissions");
+                    console.log("Quay về trang login");
                     window.href = '/login';
                 }
             } catch (err) {

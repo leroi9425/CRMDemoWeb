@@ -1,6 +1,8 @@
 package com.crm.BackendCrm.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -52,4 +54,7 @@ public class Customer {
 
     @Column
     private String emails;
+
+    @OneToMany(mappedBy = "customer")
+    private List<Contact> contact;
 }
