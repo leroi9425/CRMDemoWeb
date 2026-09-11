@@ -98,11 +98,6 @@ public class CustomerService {
                                             MapExcel::getColumnName
                                         ));
         
-        List<Contact> contacts = contactRepository.findAll();
-        Map<String, List<Contact>> contactMap = contacts.stream()
-                                                .filter(contact -> contact.getCustomerCode() != null)
-                                                .collect(Collectors.groupingBy(Contact::getCustomerCode));
-
         SXSSFWorkbook workbook = new SXSSFWorkbook(100);
 
         Sheet sheet = workbook.createSheet("Customers");
@@ -137,10 +132,15 @@ public class CustomerService {
                 else if(fields.get(i).equals("company")) row.createCell(i).setCellValue(customer.getCompany() != null ? customer.getCompany().getName() : "");
                 else if(fields.get(i).equals("gender")) row.createCell(i).setCellValue(customer.isGender() ? "Nam" : "Nữ");
                 else if(fields.get(i).equals("contacts")){
-                    List<Contact> cusContacts = contactMap.getOrDefault(customer.getCustomerCode(), new ArrayList<>());
+                    List<Contact> cusContacts = customer.getContact(); // Tận dụng luôn @OneToMany
                     String contactRow = "";
-                    for(Contact c : cusContacts){
-                        contactRow +=  c.getPosition().getNamePosition() + "-" +c.getContactName() +" SĐT: " + c.getPhoneNumber() + " Email: " + c.getEmail() + "\n";
+                    // System.out.print("contact of a customer: " + cusContacts==null);
+                    if (cusContacts != null) {
+                        for(Contact c : cusContacts){
+                            // System.out.println("Contact dang duoc duyet");
+                            String positionName = (c.getPosition() != null) ? c.getPosition().getNamePosition() : "N/A";
+                            contactRow += positionName + " - " + c.getContactName() + " (SĐT: " + c.getPhoneNumber() + " - Email: " + c.getEmail() + ")\n";
+                        }
                     }
                     row.createCell(i).setCellValue(contactRow);
                 }
@@ -199,7 +199,7 @@ public class CustomerService {
             contact.getContactName(),
             contact.getPhoneNumber(),
             contact.getEmail(),
-            contact.getCustomerCode(),
+            contact.getCustomer().getCustomerCode(),
             contact.getPosition().getId()
         );
     }
@@ -212,12 +212,12 @@ public class CustomerService {
                                         .stream().map(this::emailToDTO)
                                         .collect(Collectors.toList());
 
-        List<ContactResponseDTO> contacts = contactRepository.getByCustomerCode(customer.getCustomerCode())
+        List<ContactResponseDTO> contacts = contactRepository.findByCustomer_CustomerCode(customer.getCustomerCode())
                                             .stream().map(this::contactToDTO)
                                             .collect(Collectors.toList());
         List<ContactPositionResponseDTO> contactPosition = new ArrayList<>();
         for(int i=0 ; i<contacts.size() ; i++){
-            System.out.print("index contact: "+i);
+            // System.out.print("index contact: "+i);
             Long pid = contacts.get(i).positionId();
 
             Position position = positionRepository.findById(pid)
@@ -253,7 +253,7 @@ public class CustomerService {
     }
 
     public void saveFileData(InputStream file, String mappingJson) throws IOException {
-        System.out.println("Bắt đầu quy trình Import bằng Bảng Tạm (Staging Table)...");
+        // System.out.println("Bắt đầu quy trình Import bằng Bảng Tạm (Staging Table)...");
         Company defaultCompany = companyRepository.findById((long)1).
         orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Company not found"));
 
@@ -324,7 +324,7 @@ public class CustomerService {
                     email = email.trim();
                     if (!email.isEmpty()) {
                         if (duplicateEmails.contains(email)) {
-                            System.out.println("Dòng " + row.getRowNum() + " bị loại vì Email clone: " + email);
+                            // System.out.println("Dòng " + row.getRowNum() + " bị loại vì Email clone: " + email);
                             return; // Trùng 1 cái là vứt cả dòng!
                         }
                         // Tạo object Email riêng lẻ, nhét luôn mã mỏ neo
@@ -336,7 +336,7 @@ public class CustomerService {
                 }
                 
                 if (!phone.isEmpty() && duplicatePhones.contains(phone)) {
-                    System.out.println("Dòng " + row.getRowNum() + " bị loại vì SĐT này bị clone: " + phone);
+                    // System.out.println("Dòng " + row.getRowNum() + " bị loại vì SĐT này bị clone: " + phone);
                     return; // Vứt
                 }
 
@@ -383,10 +383,10 @@ public class CustomerService {
         String jsonCustomer = mapper.writeValueAsString(tmpCustomerList);
         String jsonEmail = mapper.writeValueAsString(tmpEmailList);
 
-        System.out.println("Đang gọi Stored Procedure xử lý data nội bộ DB...");
+        // System.out.println("Đang gọi Stored Procedure xử lý data nội bộ DB...");
         customerTmpRepository.processCustomerImport(jsonCustomer, jsonEmail);
 
-        System.out.println("Import THÀNH CÔNG ! (Bằng sức mạnh của Stored Procedure)");
+        // System.out.println("Import THÀNH CÔNG ! (Bằng sức mạnh của Stored Procedure)");
     }
 
     public CustomerResponseDTO create(CustomerRequestDTO dto, Long senderId) {

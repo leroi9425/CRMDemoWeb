@@ -26,8 +26,8 @@ public class Contact {
     private String email;
 
     @ManyToOne
-    @JoinColumn(name = "customer_code", nullable = false)
-    private String customerCode;
+    @JoinColumn(name = "customer_code", nullable = false, referencedColumnName = "customerCode")
+    private Customer customer;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "position_id")

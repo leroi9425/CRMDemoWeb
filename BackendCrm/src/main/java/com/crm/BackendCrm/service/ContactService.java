@@ -38,7 +38,7 @@ public class ContactService {
     public List<ContactResponseDTO> getByCustomerId(Long customerId){
         Customer customer = customerRepository.findById(customerId)
                             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy Customer"));
-        return contactRepository.getByCustomerCode(customer.getCustomerCode()).stream().map(this::toDTO).collect(Collectors.toList());
+        return contactRepository.findByCustomer_CustomerCode(customer.getCustomerCode()).stream().map(this::toDTO).collect(Collectors.toList());
     }
 
     public ContactResponseDTO create(ContactRequestDTO dto) {
@@ -55,7 +55,7 @@ public class ContactService {
         contact.setContactName(dto.contactName());
         contact.setPhoneNumber(dto.phoneNumber());
         contact.setEmail(dto.email());
-        contact.setCustomerCode(customer.getCustomerCode());
+        contact.setCustomer(customer);
         contact.setPosition(position);
 
         return toDTO(contactRepository.save(contact));
@@ -77,7 +77,7 @@ public class ContactService {
         contact.setContactName(dto.contactName());
         contact.setPhoneNumber(dto.phoneNumber());
         contact.setEmail(dto.email());
-        contact.setCustomerCode(customer.getCustomerCode());
+        contact.setCustomer(customer);
         contact.setPosition(position);
 
         return toDTO(contactRepository.save(contact));
@@ -98,7 +98,7 @@ public class ContactService {
                 c.getContactName(),
                 c.getPhoneNumber(),
                 c.getEmail(),
-                c.getCustomerCode(),
+                c.getCustomer().getCustomerCode(),
                 posId
         );
     }
