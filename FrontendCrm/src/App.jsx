@@ -5,6 +5,7 @@ import CustomerView from "./components/CustomerView";
 import UserView from "./components/UserView";
 import Login from "./components/Login";
 import ProductView from "./components/ProductView";
+import { subscribeToPush } from "./services/pushNotification";
 
 import RoleManagerTab from "./components/RoleManagerTab";
 import CompanyView from "./components/CompanyView";
@@ -16,6 +17,15 @@ function MainLayout() {
   const [toastMessage, setToastMessage] = useState(null);
 
   useEffect(() => {
+    console.log("ĐANG GỌI PUSH");
+
+    subscribeToPush()
+        .then(subscription => {
+            console.log("PUSH SUBSCRIPTION:", subscription);
+        })
+        .catch(error => {
+            console.error("Push lỗi:", error);
+        });
     // Chỉ kết nối khi đã có auth.username
     if (!auth || !auth.username) return;
     

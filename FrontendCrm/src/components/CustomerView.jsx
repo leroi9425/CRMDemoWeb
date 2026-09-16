@@ -39,15 +39,15 @@ export default function CustomerView() {
 
     const fetchCustomers = async () => {
         try {
-            console.log("filter data" + filterData);
+            // console.log("filter data" + filterData);
             const payload = {
                 ...filterData,
                 gender: filterData.gender === "" ? null : filterData.gender === "true",
             };
-            console.log("SEARCH FE:", payload.search);
-            console.log("SEARCH FE JSON:", JSON.stringify(payload.search));
+            // console.log("SEARCH FE:", payload.search);
+            // console.log("SEARCH FE JSON:", JSON.stringify(payload.search));
             const res = await filterCustomersPage(currentPage, payload);
-            console.log("res: "+ res)
+            // console.log("res: "+ res)
             setCustomers(res.data.content);
             setTotalPage(res.data.totalPages);
         } catch (error) {
@@ -123,7 +123,7 @@ export default function CustomerView() {
                 await updateCustomer(editingCustomer.id, formData);
                 showToast("Đã cập nhật thông tin thành công!", "success");
             } else {
-                console.log(formData);
+                // console.log(formData);
                 await createCustomer(formData);
                 showToast("Đã thêm khách hàng mới!", "success");
             }
@@ -353,7 +353,7 @@ export default function CustomerView() {
                                     <input type="date" 
                                     value={filterData.toDateOfBirth}
                                     onChange={(e) => {
-                                        console.log("toDateOfBirth e target value: " + e.target.value);
+                                        // console.log("toDateOfBirth e target value: " + e.target.value);
                                         setFilterData({...filterData, toDateOfBirth: e.target.value});
                                     }}
                                     className="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary bg-white" />

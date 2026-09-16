@@ -65,6 +65,7 @@ axiosInstance.interceptors.response.use(
                     localStorage.removeItem("permissions");
                     console.log("Quay về trang login");
                     window.href = '/login';
+                    window.reload;
                 }
             } catch (err) {
                 console.error("Lỗi khi tải lại quyền", err);

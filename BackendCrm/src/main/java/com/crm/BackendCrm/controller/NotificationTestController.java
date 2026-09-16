@@ -1,12 +1,20 @@
 package com.crm.BackendCrm.controller;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
+import com.crm.BackendCrm.dto.Request.PushSubscriptionRequestDTO;
 import com.crm.BackendCrm.entity.User;
 import com.crm.BackendCrm.repository.UserRepository;
+import com.crm.BackendCrm.security.JwtUtils;
 import com.crm.BackendCrm.service.NotificationService;
+import com.crm.BackendCrm.service.PushSubscriptionService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -14,9 +22,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RequestMapping("/test")
 public class NotificationTestController {
-
     private final NotificationService notificationService;
     private final UserRepository userRepository;
+    private final JwtUtils jwtUtils;
 
     @PostMapping("/notification")
     public void testNotification() {
@@ -29,5 +37,16 @@ public class NotificationTestController {
                 recipient,
                 "🔔 Đây là notification test"
         );
+    }
+
+    @PostMapping("/subscribe")
+    public ResponseEntity<?> subscribe(
+            @RequestBody PushSubscriptionRequestDTO request
+    ) {
+        System.out.println(request.endPoint());
+        System.out.println(request.keys().p256dh());
+        System.out.println(request.keys().auth());
+
+        return ResponseEntity.ok("Subscribed");
     }
 }

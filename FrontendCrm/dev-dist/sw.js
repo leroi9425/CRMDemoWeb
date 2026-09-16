@@ -89,3 +89,13 @@ define(['./workbox-7e5eb42b'], (function (workbox) { 'use strict';
   }));
 
 }));
+
+self.addEventListener("push", event => {
+    const data = event.data.json();
+
+    event.waitUntil(
+        self.registration.showNotification(data.title, {
+            body: data.message
+        })
+    );
+  });
