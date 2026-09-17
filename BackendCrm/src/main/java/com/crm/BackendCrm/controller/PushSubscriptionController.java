@@ -2,12 +2,8 @@ package com.crm.BackendCrm.controller;
 
 import java.util.List;
 
-import org.apache.http.HttpException;
-import org.jose4j.jwk.Use;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -21,7 +17,6 @@ import com.crm.BackendCrm.entity.User;
 import com.crm.BackendCrm.repository.PushSubscriptionRepository;
 import com.crm.BackendCrm.repository.UserRepository;
 import com.crm.BackendCrm.security.JwtUtils;
-import com.crm.BackendCrm.service.PushNotificationService;
 import com.crm.BackendCrm.service.PushSubscriptionService;
 
 import lombok.RequiredArgsConstructor;
@@ -32,7 +27,6 @@ import lombok.RequiredArgsConstructor;
 public class PushSubscriptionController {
 
     private final PushSubscriptionService pushSubscriptionService;
-    private final PushNotificationService pushNotificationService;
     private final UserRepository userRepository;
     private final JwtUtils jwtUtils;
     private final PushSubscriptionRepository pushSubscriptionRepository;
