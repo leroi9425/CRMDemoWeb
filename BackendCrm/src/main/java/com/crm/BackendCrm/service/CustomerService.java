@@ -288,6 +288,7 @@ public class CustomerService {
                     }
                 }
                 if (columnIndex.containsKey("phoneNumber") && columnIndex.get("phoneNumber") != null) {
+                    
                     String phone = formatter.formatCellValue(row.getCell(columnIndex.get("phoneNumber")));
                     if (!phone.isEmpty() && !seenPhones.add(phone)) {
                         duplicatePhones.add(phone); // Bắt được kẻ trùng lặp!

@@ -16,12 +16,12 @@ import lombok.RequiredArgsConstructor;
 @RestController 
 @RequestMapping ("/api/customer") 
 @RequiredArgsConstructor 
-@CrossOrigin (origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:81"})
 public class CustomerSocialController {
     private final CustomerSocialService customerSocialService;
 
     @PostMapping("/social")
-    public ResponseEntity<?> createCustomer(@Valid @RequestBody CustomerSocialRequestDTO c) {
+    public ResponseEntity<String> createCustomer(@Valid @RequestBody CustomerSocialRequestDTO c) {
         customerSocialService.reviceCustomer(c);
         return ResponseEntity.ok().build();
     }

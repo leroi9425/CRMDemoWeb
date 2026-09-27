@@ -18,7 +18,7 @@ import com.crm.BackendCrm.security.JwtUtils;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:81"})
 public class UserController {
     private final UserService userService;
     private final JwtUtils jwtUtils;

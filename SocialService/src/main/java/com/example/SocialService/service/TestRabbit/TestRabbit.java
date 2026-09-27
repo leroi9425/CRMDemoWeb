@@ -12,7 +12,7 @@ public class TestRabbit implements CommandLineRunner{
 
     @Override
     public void run(String... args) throws Exception {
-        rabbitService.send("Hello RabbitMQ!");
+        // rabbitService.send("Hello RabbitMQ!");
     }
 
     

@@ -11,7 +11,7 @@ public class RabbitSend {
     private final RabbitTemplate rabbitTemplate;
 
     public void send(String mess){
-        rabbitTemplate.convertAndSend("test-queue",mess);
         System.out.println("Đã gửi queue");
+        rabbitTemplate.convertAndSend("test-queue",mess);
     }
 }

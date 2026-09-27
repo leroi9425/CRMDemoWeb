@@ -45,7 +45,7 @@ public class SecurityConfig {
             .authenticationProvider(authenticationProvider()) // cấu hình authentication provider để xác thực người dùng
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
             // 
-
+        System.out.println("====== Kết Thúc CẤU HÌNH Cho Security ======");   
         return http.build();
     }
 
@@ -69,7 +69,12 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("http://localhost:5173", "https://*.ngrok-free.dev", "http://192.168.*:*"));
+        configuration.setAllowedOriginPatterns(List.of(
+            "http://localhost:5173", 
+            "http://localhost:81",
+            "https://*.ngrok-free.dev", 
+            "http://192.168.*:*"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);

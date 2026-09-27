@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RestController
 @RequestMapping ("/api/exportTemplates")
 @RequiredArgsConstructor 
-@CrossOrigin (origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:81"})
 public class ExportTemplateController {
     private final ExportTemplateService exportTemplateService;
     private final JwtUtils jwtUtils;

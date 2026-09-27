@@ -9,4 +9,5 @@ import com.crm.BackendCrm.entity.Email;
 public interface EmailRepository extends JpaRepository<Email, Long> {
     Optional<Email> findById(Long id);
     List<Email> getAllByCustomerCode(String customerCode);
+    Optional<Email> findByEmailAddress(String emailAddress);
 }

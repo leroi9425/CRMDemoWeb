@@ -29,7 +29,7 @@ import org.springframework.data.domain.Page;
 @RestController
 @RequestMapping("/api/customers")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:81"})
 public class CustomerController {
     private final CustomerService customerService;
     private final JwtUtils jwtUtils;

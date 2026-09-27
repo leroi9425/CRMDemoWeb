@@ -18,6 +18,7 @@ export default function Login() {
         setLoading(true);
 
         try {
+            console.log("bắt đầu gửi lệnh submit login với user pass: " + username + password);
             const res = await login({ username, password });  // đợi dữ liệu đổ vào res
             storeData({                                       // hàm lưu vào local storage
                 token: res.data.token,
@@ -25,11 +26,16 @@ export default function Login() {
                 role: res.data.role,
                 permissions: res.data.permissions
             });
+            console.log("res nhan duoc tu be: " + res);
             navigate("/");
         } catch (err) {
             setError("Thông tin đăng nhập không chính xác.");
             setLoading(false);
         }
+    };
+
+    const handleConnectFacebook = () => {
+        window.location.href = `${import.meta.env.VITE_API_URL}/api/facebook/connect`;
     };
 
     return (
@@ -40,7 +46,7 @@ export default function Login() {
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 mb-4">
                         <i className="fa-solid fa-users text-primary text-3xl"></i>
                     </div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Chào mừng trở lại</h1>
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Chào mừng trở lại123</h1>
                     <p className="text-sm text-slate-500 mt-2">Đăng nhập để quản lý khách hàng của bạn.</p>
                 </div>
 
@@ -108,10 +114,23 @@ export default function Login() {
                         >
                             <span>{loading ? 'Đang xử lý...' : 'Đăng nhập hệ thống'}</span>
                             {loading && <i className="fa-solid fa-circle-notch fa-spin ml-2"></i>}
-                        </button>
-                        
+                        </button>                        
                     </form>
                 </div>
+                <button
+                    onClick={handleConnectFacebook}
+                    className="flex items-center gap-3 rounded-lg bg-[#1877F2] px-5 py-3 font-medium text-white shadow-sm transition hover:bg-[#166FE5] active:scale-[0.98]"
+                    >
+                    <svg
+                        className="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                    >
+                        <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.099 4.388 23.093 10.125 24v-8.437H7.078v-3.49h3.047V9.413c0-3.025 1.792-4.704 4.533-4.704 1.312 0 2.686.235 2.686.235v2.973h-1.514c-1.491 0-1.955.93-1.955 1.886v2.27h3.328l-.532 3.49h-2.796V24C19.612 23.093 24 18.099 24 12.073z" />
+                    </svg>
+
+                    Kết nối Facebook Page
+                </button>
             </div>
         </div>
     );
