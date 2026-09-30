@@ -71,9 +71,15 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of(
             "http://localhost:5173", 
-            "http://localhost:81",
-            "https://*.ngrok-free.dev", 
-            "http://192.168.*:*"
+            "http://localhost:80",
+            "http://localhost:880", 
+            "http://192.168.*:*",
+            "http://103.162.15.98:80",
+            "http://103.173.228.100:880",
+            "https://webhook.crmviet.vn",
+            "https://103.162.15.98:443",
+            "https://103.173.228.100:443",
+            "https://*.ngrok-free.dev"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));

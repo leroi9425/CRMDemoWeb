@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor 
 public class RabbitConsumeSer{
     private final FacebookService facebookService;
+    private final ZaloService zaloService;
     private final String[] socialSources = {"Facebook", "Zalo", "Tiktok", "Instagram"};
     
     @RabbitListener (queues = "test-queue")
@@ -33,7 +34,8 @@ public class RabbitConsumeSer{
                 case "Facebook":
                     facebookService.handleFaceWebHook(rootNode);
                     break;
-            
+                case "Zalo":
+                    zaloService.handleZaloWebHook(rootNode);
                 default:
                     break;
             }

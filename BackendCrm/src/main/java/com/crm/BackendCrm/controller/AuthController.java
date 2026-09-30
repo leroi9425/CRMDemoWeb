@@ -27,7 +27,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:81"})
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -40,32 +39,24 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(
             @RequestBody AuthRequest request
     ) {
-        
-        System.out.println("Bắt đầu vào hàm login do api /login");
+        System.out.println("Bắt đầu vào login");
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.username(), request.password())
         );
-        System.out.println("chạy qua Authentication authentication =");
         // Đăng ký user vào luồng chạy hiện tại
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        System.out.println("chạy qua Security getcontent =");
 
         final UserDetails userDetails = userDetailsService.loadUserByUsername(request.username());
-        System.out.println("chạy qua final UserDetails userDetails =");
         final String jwt = jwtUtils.generateToken(userDetails);
-        System.out.println("chạy qua final String jwt = jwtUtils");
         
         List<String> permissions = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
         
-        System.out.println(" List<String> permissions =");
         User user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        System.out.println("User user =");
 
         String rolesStr = user.getRoles().stream().map(Role::getName).collect(Collectors.joining(","));
-        System.out.println(" String rolesStr = user");
         
         // TRẢ VỀ JSON CÓ CẢ TOKEN VÀ MẢNG PERMISSIONS CHO REACT
         return ResponseEntity.ok(new AuthResponse(jwt, user.getUsername(), rolesStr, permissions));

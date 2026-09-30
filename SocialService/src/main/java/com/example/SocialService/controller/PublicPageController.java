@@ -43,8 +43,20 @@ public class PublicPageController {
             """;
     }
     @GetMapping("/zalo_verifierUVcE5Odl3HnLtTqpazz9A6Qhn7IAtHygCpWn.html")
-    public String zaloVerfy(@RequestParam String param) {
-        return new String();
-    }
-    
+    public String getZaloVerfy() {
+       return """
+            <!DOCTYPE html>
+            <html lang="en">
+
+            <head>
+                <meta property="zalo-platform-site-verification" content="UVcE5Odl3HnLtTqpazz9A6Qhn7IAtHygCpWn" />
+            </head>
+
+            <body>
+            There Is No Limit To What You Can Accomplish Using Zalo!
+            </body>
+
+            </html>
+                        """;
+        }
 }

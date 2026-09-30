@@ -15,9 +15,16 @@ import tools.jackson.databind.node.ObjectNode;
 public class SocialMediaService {
     private final RabbitTemplate rabbitTemplate;
 
-    public ResponseEntity<?> create(JsonNode data){
+    public ResponseEntity<?> createFacebookJson(JsonNode data){
         System.out.println("SocialService/SocialMediaService: " + data);
         ((ObjectNode)data).put("source", "Facebook");
+
+        rabbitTemplate.convertAndSend("test-queue", data.toString());
+        return ResponseEntity.ok().build();
+    }
+    public ResponseEntity<?> createZaloJson(JsonNode data){
+        System.out.println("SocialService/SocialMediaService: " + data);
+        ((ObjectNode)data).put("source", "Zalo");
 
         rabbitTemplate.convertAndSend("test-queue", data.toString());
         return ResponseEntity.ok().build();

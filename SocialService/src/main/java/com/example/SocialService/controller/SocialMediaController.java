@@ -16,8 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-
-
 @RestController 
 @RequestMapping("/api/webhook")
 @RequiredArgsConstructor
@@ -30,7 +28,14 @@ public class SocialMediaController {
         System.out.println("START-socialMediaController/getWebHook");
         System.out.println(data);
         System.out.println("END-socialMediaController/getWebHook");
-        return socialMediaService.create(data);
+        return socialMediaService.createFacebookJson(data);
+    }
+    @PostMapping("/zalo")
+    public ResponseEntity<?> getWebHookZalo(@RequestBody JsonNode data) {
+        System.out.println("START-socialMediaController/getWebHook/zalo");
+        System.out.println(data);
+        System.out.println("END-socialMediaController/getWebHook/zalo");
+        return socialMediaService.createZaloJson(data);
     }
 
     @GetMapping("")
