@@ -25,28 +25,23 @@ public class JwtUtils {
     }
 
     public String extractUsername(String token) {
-        System.out.println("extractUsername(String token)"+token);
         return extractClaim(token, Claims::getSubject);
     }
 
     public String extractRole(String token) {
-        System.out.println("extractRole(String token)"+token);
         return extractClaim(token, claims -> claims.get("role", String.class));
     }
 
     public Long extractUserId(String token) {
-        System.out.println("extractUserId(String token)"+token);
         return extractClaim(token, claims -> claims.get("userId", Long.class));
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        System.out.println("public <T> T extractClaim(String token, Function<Claims, T> claimsResolver)"+token);
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
     private Claims extractAllClaims(String token) {
-        System.out.println("extractAllClaims(String token)"+token);
         return Jwts.parserBuilder()
                 .setSigningKey(getSignInKey())
                 .build()
@@ -55,7 +50,6 @@ public class JwtUtils {
     }
 
     public String generateToken(UserDetails userDetails) {
-        System.out.println("Tạo token mới tuwf userDetails");
         java.util.Map<String, Object> extraClaims = new java.util.HashMap<>();
         
         // Chỉ lưu Role vào JWT, không lưu Permissions
@@ -71,7 +65,6 @@ public class JwtUtils {
             extraClaims.put("userId", user.getId());
         }
         
-        System.out.println("đặt key vào token đã xong");
         // 4. Sinh ra Token mỏng nhẹ
         return generateToken(extraClaims, userDetails);
     }

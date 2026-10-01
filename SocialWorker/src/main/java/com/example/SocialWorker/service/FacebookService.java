@@ -8,7 +8,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 @Service
 public class FacebookService {
-    private final String apiCusSocial = "http://localhost:8080/api/customer/social";
+    // private final String apiCusSocial = "http://localhost:8089/api/customer/social";
+    private final String apiCusSocial = "https://webhook.crmviet.vn/api/customer/social";
     private final String faceApi = "https://graph.facebook.com/v26.0/";
     @Value("${facebook.access.token}")
     private String facebookToken;

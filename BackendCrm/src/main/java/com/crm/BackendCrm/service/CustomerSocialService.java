@@ -57,6 +57,7 @@ public class CustomerSocialService {
             customer.setCreatedAt(LocalDateTime.now());
             customer.setDateOfBirth("1-1-2026");
             customer.setGender(true);
+            System.out.println("emails khi them (customerSocialService)" + data.email());
             customer.setEmail(data.email());
             customer.setLocation("Việt Nam");
             customer.setUser(user);

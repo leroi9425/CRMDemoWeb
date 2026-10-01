@@ -27,6 +27,7 @@ public class SocialMediaService {
         ((ObjectNode)data).put("source", "Zalo");
 
         rabbitTemplate.convertAndSend("test-queue", data.toString());
+        System.out.println("Complete send to rabbitMQ");
         return ResponseEntity.ok().build();
     }
 }

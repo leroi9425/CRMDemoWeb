@@ -17,7 +17,7 @@ public class RabbitConsumeSer{
     
     @RabbitListener (queues = "test-queue")
     public void recevice(String mess){
-        // System.out.println("nhan duoc mess: " + mess);
+        System.out.println("nhan duoc mess: " + mess);
         if(mess == null || mess.isEmpty()) 
             return;
         String messClear = mess.trim();

@@ -29,16 +29,16 @@ function MainLayout() {
     // Chỉ kết nối khi đã có auth.username
     if (!auth || !auth.username) return;
     
-    // const client = connectWebSocket(
-    //     auth.username,
-    //     (notification) => {
-    //         console.log("🔔 Notification:", notification);
-    //         // Hiện Toast nổi lên
-    //         setToastMessage(notification.message);
-    //         // 5 giây sau tự tắt
-    //         setTimeout(() => setToastMessage(null), 5000);
-    //     }
-    // );
+    const client = connectWebSocket(
+        auth.username,
+        (notification) => {
+            console.log("🔔 Notification:", notification);
+            // Hiện Toast nổi lên
+            setToastMessage(notification.message);
+            // 5 giây sau tự tắt
+            setTimeout(() => setToastMessage(null), 5000);
+        }
+    );
 
     return () => {
         client.deactivate();
