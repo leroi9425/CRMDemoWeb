@@ -20,6 +20,7 @@ public class SocialMediaService {
         ((ObjectNode)data).put("source", "Facebook");
 
         rabbitTemplate.convertAndSend("test-queue", data.toString());
+        System.out.println("Complete send to rabbitMQ");
         return ResponseEntity.ok().build();
     }
     public ResponseEntity<?> createZaloJson(JsonNode data){

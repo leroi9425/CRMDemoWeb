@@ -1,5 +1,9 @@
 package com.example.SocialWorker.service;
 
+import java.net.URI;
+import java.util.Map;
+
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 
@@ -20,12 +24,28 @@ public class DtoService {
             System.out.println("Kết quả gửi cusDTO: "+ result);
         }
     }
-    public static JsonNode getDTO(String api){
+    public static JsonNode getDTO(String api, Map<String, String> headers, String zaloBody){
         RestClient client = RestClient.create();
-        String result = client.get()
-                .uri(api)
+        System.out.println("=== getDTO ===");
+        System.out.println("api = " + api);
+        System.out.println("headers = " + headers);
+        System.out.println("zaloBody = " + zaloBody);
+        String result = null;
+        if(zaloBody == null){
+            result = client.method(HttpMethod.GET)
+                .uri(URI.create(api))
+                .headers((h) -> headers.forEach(h::add))
                 .retrieve()
                 .body(String.class);
+        }
+        else{
+            result = client.method(HttpMethod.GET)
+                .uri(URI.create(api))
+                .headers((h) -> headers.forEach(h::add))
+                .body(zaloBody)
+                .retrieve()
+                .body(String.class);
+        }
         System.out.println("Kết quả gửi cusDTO: "+ result);
         try {
             

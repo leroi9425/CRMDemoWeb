@@ -1,5 +1,7 @@
 package com.example.SocialWorker.service;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -9,7 +11,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 @Service
 public class FacebookService {
     // private final String apiCusSocial = "http://localhost:8089/api/customer/social";
-    private final String apiCusSocial = "https://webhook.crmviet.vn/api/customer/social";
+    private final String apiCusSocial = "http://localhost:8089/api/customer/social";
     private final String faceApi = "https://graph.facebook.com/v26.0/";
     @Value("${facebook.access.token}")
     private String facebookToken;
@@ -24,8 +26,10 @@ public class FacebookService {
         return entryNode.path("messaging").get(0).path("sender").path("id").asText();
     }
     public String getNameFromFaceId(String faceId){
-        String api = faceApi + faceId + "?fields=name&access_token=" + facebookToken;
-        JsonNode cusInfo = DtoService.getDTO(api);
+        // String api = faceApi + faceId + "?fields=name&access_token=" + facebookToken;
+        System.out.println("Lấy tên từ facebookId: " + faceId);
+        String api = faceApi + faceId + "?fields=name";
+        JsonNode cusInfo = DtoService.getDTO(api, Map.of("Authorization", "Bearer " + facebookToken), null);
         return cusInfo.path("name").asText();
     }
     public String getChatFromMess(JsonNode entryNode){

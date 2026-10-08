@@ -2,7 +2,6 @@ package com.example.SocialService.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestParam;
 
 
 @RestController
@@ -13,8 +12,8 @@ public class PublicPageController {
         return """
             <html>
             <body>
-                <h1>Chính sách quyền riêng tư</h1>
-                <p>Đây là chính sách quyền riêng tư của ứng dụng CRM.</p>
+                <h1>Trang tào lào</h1>
+                <p>ko có nội dung.</p>
             </body>
             </html>
             """;
@@ -25,8 +24,8 @@ public class PublicPageController {
         return """
             <html>
             <body>
-                <h1>Điều khoản dịch vụ</h1>
-                <p>Đây là điều khoản dịch vụ của ứng dụng CRM.</p>
+                <h1>trang abc</h1>
+                <p>ko có nội dung.</p>
             </body>
             </html>
             """;

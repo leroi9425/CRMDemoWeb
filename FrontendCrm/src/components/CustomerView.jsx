@@ -400,20 +400,6 @@ export default function CustomerView() {
                                     Khu vực {renderSortIcon('location')}
                                 </th>
                                 <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
-                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
-                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
-                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
-                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
-                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
-                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
-                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
-                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
-                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
-                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
-                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
-                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
-                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
-                                <th className="px-6 py-4 min-w-[120px] text-right">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 text-sm">

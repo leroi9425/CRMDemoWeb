@@ -1,13 +1,17 @@
 package com.example.SocialService.controller;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Value;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
+
 import org.springframework.web.bind.annotation.RequestBody;
 
 
@@ -16,14 +20,22 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RequiredArgsConstructor
 @CrossOrigin (origins = "http://localhost:5173")
 public class FacebookControllerAuth {
-    @PostMapping("/connect")
-    public ResponseEntity<?> connect(@RequestBody String entity) {
-        RestClient restClient = RestClient.create();
-        // String resul = restClient.get()
-            // .uri()
-            // .
+    @Value("${APP_ID}")
+    private String appId;
+
+    final private String redirectUri = "https://webhook.crmviet.vn";
+
+    @GetMapping("/connect")
+    public Map<String, String> connect() {
+        String url = UriComponentsBuilder.fromUriString("https://www.facebook.com/v26.0/dialog/oauth")
+                .queryParam("client_id", appId)
+                .queryParam("redirect_uri", redirectUri)
+                .queryParam("scope", "pages_show_list,pages_messaging,pages_read_engagement,pages_manage_metadata")
+                .build()
+                .encode()
+                .toUriString();
         
-        return ResponseEntity.ok().build();
+        return Map.of("url", url);
     }
     
 }

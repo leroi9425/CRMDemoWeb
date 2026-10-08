@@ -34,10 +34,6 @@ export default function Login() {
         }
     };
 
-    const handleConnectFacebook = () => {
-        window.location.href = `${import.meta.env.VITE_API_URL}/api/facebook/connect`;
-    };
-
     return (
         <div className="bg-slate-50 min-h-screen flex items-center justify-center p-4">
             <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden transform transition-all duration-500 translate-y-0 opacity-100">
@@ -117,20 +113,6 @@ export default function Login() {
                         </button>                        
                     </form>
                 </div>
-                <button
-                    onClick={handleConnectFacebook}
-                    className="flex items-center gap-3 rounded-lg bg-[#1877F2] px-5 py-3 font-medium text-white shadow-sm transition hover:bg-[#166FE5] active:scale-[0.98]"
-                    >
-                    <svg
-                        className="h-5 w-5"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                    >
-                        <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.099 4.388 23.093 10.125 24v-8.437H7.078v-3.49h3.047V9.413c0-3.025 1.792-4.704 4.533-4.704 1.312 0 2.686.235 2.686.235v2.973h-1.514c-1.491 0-1.955.93-1.955 1.886v2.27h3.328l-.532 3.49h-2.796V24C19.612 23.093 24 18.099 24 12.073z" />
-                    </svg>
-
-                    Kết nối Facebook Page
-                </button>
             </div>
         </div>
     );
