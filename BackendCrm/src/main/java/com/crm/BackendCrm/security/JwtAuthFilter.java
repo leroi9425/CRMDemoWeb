@@ -5,13 +5,12 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.security.core.GrantedAuthority;
 
 import java.io.IOException;
 
@@ -20,7 +19,6 @@ import java.io.IOException;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
-    private final CustomUserDetailsService userDetailsService;
     private final com.crm.BackendCrm.service.RoleService roleService;
 
     @Override
@@ -31,15 +29,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String username;
-
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
-
         jwt = authHeader.substring(7); // cắt 7 ký tự đầu tiên của chuỗi "Bearer " để lấy token
-        username = jwtUtils.extractUsername(jwt);  // lấy username từ token
-
+        try {
+            username = jwtUtils.extractUsername(jwt);  // lấy username từ token
+        } catch (Exception e) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             
             // 1. Lôi tên Role từ Token ra
@@ -48,12 +48,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             if (roleName != null) {
                 // 2. Chọc xuống Redis lấy mảng quyền (Siêu tốc độ)
                 java.util.List<String> permissions = roleService.getPermissionNamesByRoleName(roleName);
-                
+                // for (String perm : permissions) {
+                //     System.out.println("Permission for role " + roleName + ": " + perm);
+                // }
                 // 3. Biến thành mảng quyền của Spring Security
-                java.util.List<org.springframework.security.core.GrantedAuthority> authorities = permissions.stream()
+                java.util.List<GrantedAuthority> authorities = permissions.stream()
                         .map(org.springframework.security.core.authority.SimpleGrantedAuthority::new)
                         .collect(java.util.stream.Collectors.toList());
-
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         username,
                         null,
@@ -64,5 +65,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
         }
         filterChain.doFilter(request, response);
+        
+        System.out.println("Kết thúc doFilter");
     }
 }

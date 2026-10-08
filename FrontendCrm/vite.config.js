@@ -9,12 +9,15 @@ export default defineConfig({
     allowedHosts: ['civilisatory-overgenerously-johana.ngrok-free.dev'],
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8089',
         changeOrigin: true
       }
     }
   },
   plugins: [
     react()
-  ]
+  ],
+  build: {
+    sourcemap: true 
+  }
 })

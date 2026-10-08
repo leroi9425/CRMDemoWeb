@@ -1,0 +1,61 @@
+package com.example.SocialService.controller;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+
+@RestController
+public class PublicPageController {
+
+    @GetMapping(value = "/privacy", produces = "text/html")
+    public String privacy() {
+        return """
+            <html>
+            <body>
+                <h1>Trang tào lào</h1>
+                <p>ko có nội dung.</p>
+            </body>
+            </html>
+            """;
+    }
+
+    @GetMapping(value = "/terms", produces = "text/html")
+    public String terms() {
+        return """
+            <html>
+            <body>
+                <h1>trang abc</h1>
+                <p>ko có nội dung.</p>
+            </body>
+            </html>
+            """;
+    }
+    @GetMapping(value = "/", produces = "text/html")
+    public String home() {
+        return """
+            <html>
+            <body>
+                <h1>WebCRM</h1>
+                <p>Ứng dụng quản lý thông tin và chăm sóc khách hàng.</p>
+            </body>
+            </html>
+            """;
+    }
+    @GetMapping("/zalo_verifierUVcE5Odl3HnLtTqpazz9A6Qhn7IAtHygCpWn.html")
+    public String getZaloVerfy() {
+       return """
+            <!DOCTYPE html>
+            <html lang="en">
+
+            <head>
+                <meta property="zalo-platform-site-verification" content="UVcE5Odl3HnLtTqpazz9A6Qhn7IAtHygCpWn" />
+            </head>
+
+            <body>
+            There Is No Limit To What You Can Accomplish Using Zalo!
+            </body>
+
+            </html>
+                        """;
+        }
+}

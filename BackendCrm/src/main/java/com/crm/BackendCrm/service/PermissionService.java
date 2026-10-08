@@ -4,8 +4,8 @@ import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import com.crm.BackendCrm.repository.PermissionRepository;
 import com.crm.BackendCrm.entity.Permission;
-import com.crm.BackendCrm.dto.PermissionRequestDTO;
-import com.crm.BackendCrm.dto.PermissionResponseDTO;
+import com.crm.BackendCrm.dto.Request.PermissionRequestDTO;
+import com.crm.BackendCrm.dto.Response.PermissionResponseDTO;
 
 // Thư viện Cache của Spring Boot
 import org.springframework.cache.annotation.Cacheable;

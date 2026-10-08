@@ -18,6 +18,7 @@ export default function Login() {
         setLoading(true);
 
         try {
+            console.log("bắt đầu gửi lệnh submit login với user pass: " + username + password);
             const res = await login({ username, password });  // đợi dữ liệu đổ vào res
             storeData({                                       // hàm lưu vào local storage
                 token: res.data.token,
@@ -25,6 +26,7 @@ export default function Login() {
                 role: res.data.role,
                 permissions: res.data.permissions
             });
+            console.log("res nhan duoc tu be: " + res);
             navigate("/");
         } catch (err) {
             setError("Thông tin đăng nhập không chính xác.");
@@ -40,7 +42,7 @@ export default function Login() {
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 mb-4">
                         <i className="fa-solid fa-users text-primary text-3xl"></i>
                     </div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Chào mừng trở lại</h1>
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Chào mừng trở lại123</h1>
                     <p className="text-sm text-slate-500 mt-2">Đăng nhập để quản lý khách hàng của bạn.</p>
                 </div>
 
@@ -108,8 +110,7 @@ export default function Login() {
                         >
                             <span>{loading ? 'Đang xử lý...' : 'Đăng nhập hệ thống'}</span>
                             {loading && <i className="fa-solid fa-circle-notch fa-spin ml-2"></i>}
-                        </button>
-                        
+                        </button>                        
                     </form>
                 </div>
             </div>

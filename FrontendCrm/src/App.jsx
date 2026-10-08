@@ -1,18 +1,72 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { getFacebookWebHook } from "./api/webhookApi";
 import { useAuth } from "./context/AuthContext";
 import CustomerView from "./components/CustomerView";
 import UserView from "./components/UserView";
 import Login from "./components/Login";
+import ProductView from "./components/ProductView";
+import { subscribeToPush } from "./services/pushNotification";
 
 import RoleManagerTab from "./components/RoleManagerTab";
+import CompanyView from "./components/CompanyView";
+import { connectWebSocket } from "./services/websocket";
 
 function MainLayout() {
   const [activeTab, setActiveTab] = useState("customers");
   const { auth, logoutUser } = useAuth();
+  const [toastMessage, setToastMessage] = useState(null);
+
+  useEffect(() => {
+    console.log("ĐANG GỌI PUSH");
+
+    subscribeToPush()
+        .then(subscription => {
+            console.log("PUSH SUBSCRIPTION:", subscription);
+        })
+        .catch(error => {
+            console.error("Push lỗi:", error);
+        });
+    // Chỉ kết nối khi đã có auth.username
+    if (!auth || !auth.username) return;
+    
+    const client = connectWebSocket(
+        auth.username,
+        (notification) => {
+            console.log("🔔 Notification:", notification);
+            // Hiện Toast nổi lên
+            setToastMessage(notification.message);
+            // 5 giây sau tự tắt
+            setTimeout(() => setToastMessage(null), 5000);
+        }
+    );
+
+    return () => {
+        client.deactivate();
+    };
+  }, [auth]);
+
+    const handleConnectFacebook = async () => {
+      console.log("Kết nối Facebook Page");
+      const res = await getFacebookWebHook();
+      console.log("Kết nối Facebook Page thành công, chuyển hướng đến:", res.data.url);
+      window.location.href = res.data.url;  // Chuyển hướng người dùng đến URL trả về từ API
+    };
 
   return (
-    <div className="text-slate-800 antialiased min-h-screen flex flex-col bg-slate-50">
+    <div className="text-slate-800 antialiased min-h-screen w-full flex flex-col bg-slate-50 relative">
+      {/* KHỐI TOAST THÔNG BÁO NỔI LÊN */}
+      <div className={`fixed top-4 right-4 z-[9999] transition-all duration-500 transform ${toastMessage ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"}`}>
+        <div className="bg-white border-l-4 border-blue-500 shadow-xl rounded-md p-4 flex items-center max-w-sm">
+          <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3 flex-shrink-0">
+            <i className="fa-solid fa-bell animate-wiggle"></i>
+          </div>
+          <div>
+            <h4 className="text-slate-800 font-bold text-sm">Thông báo mới</h4>
+            <p className="text-slate-600 text-sm mt-0.5">{toastMessage}</p>
+          </div>
+        </div>
+      </div>
       <nav className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -22,24 +76,44 @@ function MainLayout() {
             </div>
             
             <div className="flex items-center h-full space-x-8">
-              <button 
+              {auth?.permissions?.includes("QUAN_LY_KHACH_HANG") && (
+                <button 
                 onClick={() => setActiveTab("customers")}
                 className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'customers' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
-              >
-                Khách hàng
-              </button>
-              <button 
+                >
+                  Khách hàng
+                </button>
+              )}
+              {auth?.permissions?.includes("QUAN_LY_SAN_PHAM") && (
+                <button 
+                onClick={() => setActiveTab("products")}
+                className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'products' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+                >
+                  Sản phẩm
+                </button>
+              )}              
+              {auth?.permissions?.includes("QUAN_LY_QUYEN") && (
+                <button
                 onClick={() => setActiveTab("roles")}
                 className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'roles' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
-              >
-                Nhóm Quyền
-              </button>
+                >
+                  Nhóm Quyền
+                </button>
+              )}              
               {auth?.permissions?.includes("QUAN_LY_USER") && (
                 <button 
                   onClick={() => setActiveTab("users")}
                   className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'users' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
                 >
                   Người dùng (System)
+                </button>
+              )}
+              {auth?.permissions?.includes("QUAN_LY_CONG_TY") && (
+                <button 
+                  onClick={() => setActiveTab("companies")}
+                  className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'companies' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+                >
+                  Công ty
                 </button>
               )}
             </div>
@@ -49,14 +123,30 @@ function MainLayout() {
                 <button onClick={logoutUser} className="text-sm font-medium text-red-500 hover:text-red-700 transition-colors">
                     Đăng xuất
                 </button>
+                <button
+                    onClick={handleConnectFacebook}
+                    className="flex items-center gap-3 rounded-lg bg-[#1877F2] px-5 py-3 font-medium text-white shadow-sm transition hover:bg-[#166FE5] active:scale-[0.98]"
+                    >
+                    <svg
+                        className="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                    >
+                        <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.099 4.388 23.093 10.125 24v-8.437H7.078v-3.49h3.047V9.413c0-3.025 1.792-4.704 4.533-4.704 1.312 0 2.686.235 2.686.235v2.973h-1.514c-1.491 0-1.955.93-1.955 1.886v2.27h3.328l-.532 3.49h-2.796V24C19.612 23.093 24 18.099 24 12.073z" />
+                    </svg>
+
+                    Kết nối Facebook Page
+                </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {activeTab === "customers" && <CustomerView />}
-      {activeTab === "roles" && <RoleManagerTab />}
+      {activeTab === "customers" && auth?.permissions?.includes("QUAN_LY_KHACH_HANG") && <CustomerView />}
+      {activeTab === "products" && auth?.permissions?.includes("QUAN_LY_SAN_PHAM") && <ProductView />}
+      {activeTab === "roles" && auth?.permissions?.includes("QUAN_LY_QUYEN") && <RoleManagerTab />}
       {activeTab === "users" && auth?.permissions?.includes("QUAN_LY_USER") && <UserView />}
+      {activeTab == "companies" && auth?.permissions?.includes("QUAN_LY_CONG_TY") && <CompanyView />}
     </div>
   );
 }

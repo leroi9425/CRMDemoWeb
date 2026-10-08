@@ -35,6 +35,7 @@ axiosInstance.interceptors.response.use(
         }
 
         if (error.response && error.response.status === 403) {
+            console.log("Bi 403 roi nay");
             try {
                 const token = localStorage.getItem("token");
                 // Tự động gọi API lấy quyền mới nhất
@@ -48,6 +49,23 @@ axiosInstance.interceptors.response.use(
                 // Thông báo và bắt buộc F5 giao diện
                 if (window.confirm("Quyền của bạn vừa bị thay đổi bởi Quản trị viên! Bấm OK để tải lại giao diện.")) {
                     window.location.reload();
+                }
+            } catch (err) {
+                console.error("Lỗi khi tải lại quyền", err);
+            }
+        }
+        if (error.response && error.response.status === 500) {
+            console.log("Bi 500 roi nay");
+            try {
+                // Thông báo và bắt buộc F5 giao diện
+                if (window.confirm("Quyền của bạn vừa bị thay đổi bởi Quản trị viên! Bấm OK để tải lại giao diện.")) {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("user");
+                    localStorage.removeItem("role");
+                    localStorage.removeItem("permissions");
+                    console.log("Quay về trang login");
+                    window.href = '/login';
+                    window.reload;
                 }
             } catch (err) {
                 console.error("Lỗi khi tải lại quyền", err);

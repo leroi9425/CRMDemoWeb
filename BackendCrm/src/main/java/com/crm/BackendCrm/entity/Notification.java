@@ -35,4 +35,8 @@ public class Notification {
 
     @Column(updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    public Object getTimestamp() {
+        throw new UnsupportedOperationException("Unimplemented method 'getTimestamp'");
+    }
 }

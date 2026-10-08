@@ -1,7 +1,7 @@
 package com.crm.BackendCrm.controller;
 
-import com.crm.BackendCrm.dto.AuthRequest;
-import com.crm.BackendCrm.dto.AuthResponse;
+import com.crm.BackendCrm.dto.Request.AuthRequest;
+import com.crm.BackendCrm.dto.Response.AuthResponse;
 import com.crm.BackendCrm.entity.User;
 import com.crm.BackendCrm.repository.UserRepository;
 import com.crm.BackendCrm.security.JwtUtils;
@@ -27,7 +27,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -40,10 +39,10 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(
             @RequestBody AuthRequest request
     ) {
+        System.out.println("Bắt đầu vào login");
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.username(), request.password())
         );
-        
         // Đăng ký user vào luồng chạy hiện tại
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -53,7 +52,7 @@ public class AuthController {
         List<String> permissions = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
-
+        
         User user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
@@ -64,15 +63,21 @@ public class AuthController {
     }
 
     @GetMapping("/me/permissions")
-    public ResponseEntity<List<String>> getMyPermissions(@RequestHeader("Authorization") String authHeader) {
-        String jwt = authHeader.substring(7);
-        String username = jwtUtils.extractUsername(jwt);
-        
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-        List<String> permissions = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
-                
-        return ResponseEntity.ok(permissions);
+    public ResponseEntity<?> getMyPermissions(@RequestHeader("Authorization") String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ") || authHeader.equals("Bearer null")) {
+                return ResponseEntity.status(401).build();
+        }
+        try {
+                String jwt = authHeader.substring(7);
+                String username = jwtUtils.extractUsername(jwt);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                List<String> permissions = userDetails.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toList());
+                return ResponseEntity.ok(permissions);
+        } 
+        catch (Exception e) {
+                return ResponseEntity.status(401).build();
+        }
     }
 }

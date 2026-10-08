@@ -4,7 +4,6 @@ import com.crm.BackendCrm.security.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -13,7 +12,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -41,13 +39,13 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)    // tắt csrf bỏ qua csrf token
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))  // cấu hình cors để cho phép các domain khác nhau truy cập vào API
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/auth/**", "/error", "/ws/**", "/test/**", "/api/webhook/**", "/privacy", "/terms", "/api/customer/social", "/api/facebook/redirect").permitAll()
                 .anyRequest().authenticated()
             )  // chặn quyền tất cả các request khác, request auth thì ai cũng vào đc
             .authenticationProvider(authenticationProvider()) // cấu hình authentication provider để xác thực người dùng
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
             // 
-
+        System.out.println("====== Kết Thúc CẤU HÌNH Cho Security ======");   
         return http.build();
     }
 
@@ -71,7 +69,18 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("http://localhost:5173", "https://*.ngrok-free.dev", "http://192.168.*:*"));
+        configuration.setAllowedOriginPatterns(List.of(
+            "http://localhost:5173", 
+            "http://localhost:80",
+            "http://localhost:880", 
+            "http://192.168.*:*",
+            "http://103.162.15.98:80",
+            "http://103.173.228.100:880",
+            "https://webhook.crmviet.vn",
+            "https://103.162.15.98:443",
+            "https://103.173.228.100:443",
+            "https://*.ngrok-free.dev"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
