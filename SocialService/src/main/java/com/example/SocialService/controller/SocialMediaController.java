@@ -1,12 +1,9 @@
 package com.example.SocialService.controller;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RestController 
 @RequestMapping("/api/webhook")
 @RequiredArgsConstructor
-@CrossOrigin (origins = "http://localhost:5173")
 public class SocialMediaController {
     private final SocialMediaService socialMediaService;
 
@@ -35,7 +31,7 @@ public class SocialMediaController {
     private String OA_SECRET; 
     @Value("${APP_SECRET}")
     private String FACEBOOK_SECRET;
-
+    
     @PostMapping
     public ResponseEntity<?> getWebHook(HttpServletRequest request, @RequestBody String body) throws NoSuchAlgorithmException {
         System.out.println("START-socialMediaController/getWebHook/facebook");

@@ -7,6 +7,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.crm.BackendCrm.entity.FacebookPage;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.List;
 
 @Service 
@@ -46,8 +48,9 @@ public class FacebookApiService {
                 .toUriString();
         System.out.println("URL lấy access token: " + accessTokenUrl);
 
-        JsonNode res = sendGetRequest(accessTokenUrl);
-        String accessToken = res.path("access_token").asText();
+        String res = sendGetRequest(accessTokenUrl);
+        JsonNode jsonResponse = stringToJsonNode(res);
+        String accessToken = jsonResponse.path("access_token").asText();
         System.out.println("Access token: " + accessToken);
 
         return accessToken;
@@ -63,11 +66,12 @@ public class FacebookApiService {
                 .build()
                 .encode()
                 .toUriString();
-        System.out.println("URL lấy long access token: " + longAccessTokenUrl);
+        System.out.println("URL lấy long user access token: " + longAccessTokenUrl);
 
-        JsonNode res = sendGetRequest(longAccessTokenUrl);
-        String longAccessToken = res.path("access_token").asText();
-        System.out.println("Long access token: " + longAccessToken);
+        String res = sendGetRequest(longAccessTokenUrl);
+        JsonNode jsonResponse = stringToJsonNode(res);
+        String longAccessToken = jsonResponse.path("access_token").asText();
+        System.out.println("Long user access token: " + longAccessToken);
         
         return longAccessToken;
     }
@@ -81,10 +85,11 @@ public class FacebookApiService {
                 .toUriString();
         System.out.println("URL lấy long page access token: " + pageAccessTokenUrl);
 
-        JsonNode res = sendGetRequest(pageAccessTokenUrl);
+        String res = sendGetRequest(pageAccessTokenUrl);
+        JsonNode jsonResponse = stringToJsonNode(res);
 
         FacebookPageService facebookPageService = new FacebookPageService();
-        List<FacebookPage> facebookPages = facebookPageService.getAllFacebookPagesFromJson(res);
+        List<FacebookPage> facebookPages = facebookPageService.getAllFacebookPagesFromJson(jsonResponse);
         for (FacebookPage page : facebookPages) {
             System.out.println("Facebook Page: " + page);
         }
@@ -95,36 +100,48 @@ public class FacebookApiService {
     public void doSubscribePage(FacebookPage page){
         System.out.println("FacebookApiService/doSubscribePage");
         String subscribeUrl = UriComponentsBuilder
-                .fromUriString("https://graph.facebook.com/v26.0/" + page.getId() + "/subscribed_apps")
+                .fromUriString("https://graph.facebook.com/v26.0/" + page.getPageId() + "/subscribed_apps")
                 .queryParam("access_token", page.getLongPageAccessToken())
                 .build()
                 .encode()
                 .toUriString();
         System.out.println("URL subscribe page: " + subscribeUrl);
 
-        JsonNode res = sendPostRequest(subscribeUrl, null);
+        String res = sendPostRequest(
+                subscribeUrl, 
+                "subscribed_fields=messages,feed");
         System.out.println("Subscribe page response: " + res);
     }
 
-    private JsonNode sendGetRequest(String url){
+    private String sendGetRequest(String url){
         RestClient client = RestClient.create();
-        JsonNode res = client.get()
+        String res = client.get()
                 .uri(url)
                 .retrieve()
-                .body(JsonNode.class);
+                .body(String.class);
         
         System.out.println("(FacebookApiService)Access token response: " + res);
         return res;
     }
-    private JsonNode sendPostRequest(String url, String body){
+    private String sendPostRequest(String url, String body){
         RestClient client = RestClient.create();
-        JsonNode res = client.post()
+        String res = client.post()
                 .uri(url)
                 .body(body)
                 .retrieve()
-                .body(JsonNode.class);
+                .body(String.class);
         
         System.out.println("(FacebookApiService)Post request response: " + res);
         return res;
+    }
+    private JsonNode stringToJsonNode(String jsonString){
+        try {
+            JsonNode jsonNode = new ObjectMapper().readTree(jsonString);
+            System.out.println("JSON Node: " + jsonNode);
+            return jsonNode;
+        } catch (Exception e) {
+            System.out.println("Error converting string to JSON Node: " + e.getMessage());
+            return null;
+        }
     }
 }
