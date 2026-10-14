@@ -36,14 +36,12 @@ public class FacebookService {
     public String getPageId(JsonNode entryNode){
         return entryNode.path("id").asText();
     }
-    public String getNameFromFaceId(String faceId, String pageId){
+    public String getNameFromFaceId(String faceId, String pageId, String longPageAccessToken){
         // String api = faceApi + faceId + "?fields=name&access_token=" + facebookToken;
         System.out.println("Lấy tên từ facebookId: " + faceId);
         System.out.println("Lấy tên từ pageId: " + pageId);
         String api = faceApi + faceId + "?fields=name";
-        FacebookPage facebookPage = facebookPageRepository.findByPageId(pageId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"Không tìm thấy long-lived page access token" + pageId));
-        JsonNode cusInfo = DtoService.getDTO(api, Map.of("Authorization", "Bearer " + facebookPage.getLongPageAccessToken()), null);
+        JsonNode cusInfo = DtoService.getDTO(api, Map.of("Authorization", "Bearer " + longPageAccessToken), null);
         return cusInfo.path("name").asText();
     }
     public String getChatFromMess(JsonNode entryNode){
@@ -56,7 +54,12 @@ public class FacebookService {
         String cusName = null;
         String phoneNumber = null;
         String email = null;
+
         JsonNode entryNode = rootNode.path("entry").get(0);
+        String pageId = getPageId(entryNode);
+        FacebookPage facebookPage = facebookPageRepository.findByPageId(pageId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"Không tìm thấy long-lived page access token" + pageId));
+        
         try {
             if(entryNode.has("changes")){
                 // comment
@@ -67,8 +70,8 @@ public class FacebookService {
                 // tin nhan
                 chatContext = getChatFromMess(entryNode);
                 String senderId = getSenderId(entryNode);
-                String pageId = getPageId(entryNode);
-                cusName = getNameFromFaceId(senderId, pageId);
+
+                cusName = getNameFromFaceId(senderId, pageId, facebookPage.getLongPageAccessToken());
             }
 
             System.out.println("Lấy thử chatcontext facebookService: " +chatContext);
@@ -84,7 +87,9 @@ public class FacebookService {
             CustomerSocialResponseDTO csDTO = new CustomerSocialResponseDTO(
                 cusName,
                 phoneNumber,
-                email
+                email,
+                facebookPage.getUserId(),
+                facebookPage.getCompanyId()
             );
             System.out.println("CusDTO: " + csDTO);
             DtoService.postDTO(csDTO, apiCusSocial);

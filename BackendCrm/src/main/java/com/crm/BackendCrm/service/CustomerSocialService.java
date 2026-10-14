@@ -44,10 +44,10 @@ public class CustomerSocialService {
                 return ResponseEntity.notFound().build();
             }
 
-            User user = userRepository.findById((long)2)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ko tim thay user"));
-            Company company = companyRepository.findById((long)1)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            User user = userRepository.findById(data.userId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ko tim thay user id:" + data.userId()));
+            Company company = companyRepository.findById(data.companyId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ko tim thay cong ty id:" + data.companyId()));
 
 
             Customer customer = new Customer();

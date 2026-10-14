@@ -74,7 +74,9 @@ public class ZaloService {
             CustomerSocialResponseDTO cDto = new CustomerSocialResponseDTO(
                 cusName,
                 phoneNumber,
-                email
+                email,
+                2L,
+                1L
             );
             System.out.println("Hoàn tất xử lý, chuẩn bị DTO để cho crm" + cDto);
             DtoService.postDTO(cDto, apiCusSocial);

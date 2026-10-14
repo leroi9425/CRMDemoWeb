@@ -30,4 +30,10 @@ public class FacebookPage {
 
     @Column (nullable = false)
     private String longPageAccessToken;
+
+    @Column (nullable = false)
+    private Long userId;
+
+    @Column (nullable = false)
+    private Long companyId;
 }

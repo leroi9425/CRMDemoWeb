@@ -4,6 +4,7 @@ import { getFacebookWebHook } from "./api/webhookApi";
 import { useAuth } from "./context/AuthContext";
 import CustomerView from "./components/CustomerView";
 import UserView from "./components/UserView";
+import SocialView from "./components/SocialView";
 import Login from "./components/Login";
 import ProductView from "./components/ProductView";
 import { subscribeToPush } from "./services/pushNotification";
@@ -116,6 +117,14 @@ function MainLayout() {
                   Công ty
                 </button>
               )}
+              {true && (
+                <button 
+                  onClick={() => setActiveTab("socials")}
+                  className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'socials' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+                >
+                  Mạng xã hội
+                </button>
+              )}
             </div>
 
             <div className="flex items-center space-x-4">
@@ -147,6 +156,7 @@ function MainLayout() {
       {activeTab === "roles" && auth?.permissions?.includes("QUAN_LY_QUYEN") && <RoleManagerTab />}
       {activeTab === "users" && auth?.permissions?.includes("QUAN_LY_USER") && <UserView />}
       {activeTab == "companies" && auth?.permissions?.includes("QUAN_LY_CONG_TY") && <CompanyView />}
+      {activeTab == "socials" && <SocialView />}
     </div>
   );
 }

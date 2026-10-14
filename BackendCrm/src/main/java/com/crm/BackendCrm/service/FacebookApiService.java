@@ -9,9 +9,12 @@ import com.crm.BackendCrm.entity.FacebookPage;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.RequiredArgsConstructor;
+
 import java.util.List;
 
-@Service 
+@Service
+@RequiredArgsConstructor 
 public class FacebookApiService {
     @Value("${APP_ID}")
     private String appId;
@@ -19,15 +22,19 @@ public class FacebookApiService {
     private String appSecret;
 
     final private String redirectUri = "https://webhook.crmviet.vn/api/facebook/redirect";
+    // final private String redirectUri = "https://civilisatory-overgenerously-johana.ngrok-free.dev/api/facebook/redirect";
+    private final FacebookPageService facebookPageService;
 
-    public String facebookConnect(){
+    public String facebookConnect(String state){
         System.out.println("Kết nối Facebook Page ConnectWebhookController");
         System.out.println("APP_ID: " + appId);
         System.out.println("REDIRECT_URI: " + redirectUri);
+
         String uri = UriComponentsBuilder.fromUriString("https://www.facebook.com/v26.0/dialog/oauth")
                 .queryParam("client_id", appId)
                 .queryParam("redirect_uri", redirectUri)
                 .queryParam("scope", "pages_show_list,pages_messaging,pages_read_engagement,pages_manage_metadata")
+                .queryParam("state", state)
                 .build()
                 .encode()
                 .toUriString();
@@ -83,12 +90,11 @@ public class FacebookApiService {
                 .build()
                 .encode()
                 .toUriString();
-        System.out.println("URL lấy long page access token: " + pageAccessTokenUrl);
+        System.out.println("URL lấy long page access token: ");
 
         String res = sendGetRequest(pageAccessTokenUrl);
         JsonNode jsonResponse = stringToJsonNode(res);
 
-        FacebookPageService facebookPageService = new FacebookPageService();
         List<FacebookPage> facebookPages = facebookPageService.getAllFacebookPagesFromJson(jsonResponse);
         for (FacebookPage page : facebookPages) {
             System.out.println("Facebook Page: " + page);

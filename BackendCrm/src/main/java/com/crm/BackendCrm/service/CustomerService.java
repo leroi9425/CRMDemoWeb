@@ -80,8 +80,20 @@ public class CustomerService {
     private final int itemPerPage = 5;
 
     public Page<CustomerResponseDTO> findAllInPage(int index, Long userId){
-        Pageable pageable = PageRequest.of(index, itemPerPage);
+        System.out.println("Chay vao findAllInPage");
+        Pageable pageable = PageRequest.of(
+                            index, 
+                            itemPerPage,
+                            Sort.by(Sort.Direction.DESC, "createdAt")
+                        );
+        // SELECT *
+        // FROM customer
+        // ORDER BY created_at DESC
+        // LIMIT 5 OFFSET 0;
         Page<Customer> customers = customerRepository.findByUserId(userId, pageable);
+        for (Customer customer : customers) {
+            System.out.println(customer);
+        }
         return customers.map(this::toDTO);
     }
     public List<Customer> findAllFilter(CustomerFilterRequestDTO cfDto, Long userId){
@@ -167,15 +179,16 @@ public class CustomerService {
     }
 
     private Sort createSort(CustomerFilterRequestDTO cfDto){
+        System.out.println("Chay vao createSort");
         if(cfDto.sortField() == null || cfDto.sortField().isBlank()){
-            return Sort.unsorted();
+            return Sort.by(Sort.Direction.DESC, "createdAt");
         }
 
         if("DESC".equalsIgnoreCase(cfDto.sortDirection())){
             return Sort.by(cfDto.sortField()).descending();
         }
 
-        return Sort.by(cfDto.sortField()).ascending();
+        return Sort.by(cfDto.sortField()).descending();
     }
 
     public List<CustomerResponseDTO> getAll() { 
