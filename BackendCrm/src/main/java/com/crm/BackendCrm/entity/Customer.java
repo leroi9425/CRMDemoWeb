@@ -23,7 +23,7 @@ public class Customer {
     @Column(nullable = false)
     private String customerName;
 
-    @Column(nullable = false, unique = true)
+    @Column
     private String phoneNumber;
 
     @Column(nullable = false, unique = true)

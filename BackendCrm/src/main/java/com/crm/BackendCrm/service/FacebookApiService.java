@@ -17,11 +17,11 @@ import java.util.List;
 @RequiredArgsConstructor 
 public class FacebookApiService {
     @Value("${APP_ID}")
-    private String appId;
+    private static  String appId;
     @Value ("${APP_SECRET}")
     private String appSecret;
 
-    final private String redirectUri = "https://webhook.crmviet.vn/api/facebook/redirect";
+    private String redirectUri = "https://webhook.crmviet.vn/api/facebook/redirect";
     // final private String redirectUri = "https://civilisatory-overgenerously-johana.ngrok-free.dev/api/facebook/redirect";
     private final FacebookPageService facebookPageService;
 

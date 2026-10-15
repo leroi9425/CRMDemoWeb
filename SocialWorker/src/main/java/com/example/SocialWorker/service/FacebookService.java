@@ -1,5 +1,6 @@
 package com.example.SocialWorker.service;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -57,10 +58,10 @@ public class FacebookService {
 
         JsonNode entryNode = rootNode.path("entry").get(0);
         String pageId = getPageId(entryNode);
-        FacebookPage facebookPage = facebookPageRepository.findByPageId(pageId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"Không tìm thấy long-lived page access token" + pageId));
-        
-        try {
+        List<FacebookPage> facebookPages = facebookPageRepository.findAllByPageId(pageId);        
+        // có thể báo lỗi k tìm thấy page ở đây
+        for (FacebookPage facebookPage : facebookPages) {
+            try {
             if(entryNode.has("changes")){
                 // comment
                 chatContext = getChatFromComment(entryNode);
@@ -84,6 +85,7 @@ public class FacebookService {
             if(phoneNumber == null && email == null){
                 return;
             }
+            // kẹp vòng for để lấy 1 lúc 2 ô khách hàng
             CustomerSocialResponseDTO csDTO = new CustomerSocialResponseDTO(
                 cusName,
                 phoneNumber,
@@ -94,8 +96,9 @@ public class FacebookService {
             System.out.println("CusDTO: " + csDTO);
             DtoService.postDTO(csDTO, apiCusSocial);
 
-        } catch (Exception e) {
-            System.out.print("Loi khi xu ly JSON: " + e);
+            } catch (Exception e) {
+                System.out.print("Loi khi xu ly JSON: " + e);
+            }
         }
     }
 }

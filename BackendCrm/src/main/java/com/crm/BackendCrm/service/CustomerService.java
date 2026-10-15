@@ -77,7 +77,7 @@ public class CustomerService {
 
     // private final NotificationService notificationService;
     
-    private final int itemPerPage = 5;
+    private static final int itemPerPage = 5;
 
     public Page<CustomerResponseDTO> findAllInPage(int index, Long userId){
         System.out.println("Chay vao findAllInPage");

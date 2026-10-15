@@ -14,6 +14,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface CustomerRepository extends JpaRepository<Customer, Long>, JpaSpecificationExecutor<Customer> {
     boolean existsByPhoneNumber(String phoneNumber);
+    boolean existsByPhoneNumberAndUserId(String phoneNumber, Long userId);
     boolean existsByEmail(String email);
     Page<Customer> findByUserId(Long userId, Pageable pageable); 
     Optional<Customer> findByCustomerCode(String costomerCode);
