@@ -39,13 +39,13 @@ public class ConfigPageService {
                 System.out.println("ConfigPageService/configFacebookPage - Facebook Page: " + page);
                 facebookApiService.doSubscribePage(page);
                 // subscribe thanh cong, luu vo db
-                if(!facebookPageRepository.existsByPageId(page.getPageId())){
+                if(!facebookPageRepository.existsByPageIdAndCompanyId(page.getPageId(), company.getId())){
                     page.setUser(user);
                     page.setCompany(company);
 
                     facebookPageRepository.save(page);
                 } else {
-                    FacebookPage existingPage = facebookPageRepository.findByPageId(page.getPageId())
+                    FacebookPage existingPage = facebookPageRepository.findByPageIdAndCompany_Id(page.getPageId(), company.getId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Page not found"));
                     existingPage.setPageId(page.getPageId());
                     existingPage.setPageName(page.getPageName());
