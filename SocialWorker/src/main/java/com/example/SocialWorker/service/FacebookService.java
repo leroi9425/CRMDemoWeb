@@ -37,6 +37,10 @@ public class FacebookService {
     public String getPageId(JsonNode entryNode){
         return entryNode.path("id").asText();
     }
+    public String getChatFromMess(JsonNode entryNode){
+        return entryNode.path("messaging").get(0).path("message").path("text").asText();
+    }
+
     public String getNameFromFaceId(String faceId, String pageId, String longPageAccessToken){
         // String api = faceApi + faceId + "?fields=name&access_token=" + facebookToken;
         System.out.println("Lấy tên từ facebookId: " + faceId);
@@ -45,56 +49,110 @@ public class FacebookService {
         JsonNode cusInfo = DtoService.getDTO(api, Map.of("Authorization", "Bearer " + longPageAccessToken), null);
         return cusInfo.path("name").asText();
     }
-    public String getChatFromMess(JsonNode entryNode){
-        return entryNode.path("messaging").get(0).path("message").path("text").asText();
+    public String getPhoneNumberFromNode(JsonNode entryNode){
+        String chatContext = getChatFromComment(entryNode);
+        if(chatContext != null &&!chatContext.isEmpty()){
+            return TextChatService.getPhoneNumberFromTextChat(chatContext);
+        }
+        return null;
+    }
+    public String getEmailFromNode(JsonNode entryNode){
+        String chatContext = getChatFromComment(entryNode);
+        if(chatContext != null &&!chatContext.isEmpty()){
+            return TextChatService.getEmailFromTextChat(chatContext);
+        }
+        return null;
+    }
+    public CustomerSocialResponseDTO handleCommentFromNode(JsonNode entryNode, FacebookPage facebookPage) {       
+        String cusName = getNameFromComment(entryNode);
+        String phoneNumber = getPhoneNumberFromNode(entryNode);
+        String email = getEmailFromNode(entryNode);
+        System.out.println("Lấy thử số và email trong facebookService: " +phoneNumber+email);
+
+        if(phoneNumber == null && email == null){
+            return null;
+        }
+
+        CustomerSocialResponseDTO csDTO = new CustomerSocialResponseDTO(
+            cusName,
+            phoneNumber,
+            email,
+            facebookPage.getUserId(),
+            facebookPage.getCompanyId()
+        );
+
+        return csDTO;
+    }
+    public CustomerSocialResponseDTO handleMessageFromNode(JsonNode entryNode, FacebookPage facebookPage){
+        String senderId = getSenderId(entryNode);
+        String cusName = getNameFromFaceId(senderId, facebookPage.getPageId(), facebookPage.getLongPageAccessToken());
+        String phoneNumber = getPhoneNumberFromNode(entryNode);
+        String email = getEmailFromNode(entryNode);
+        System.out.println("Lấy thử số và email trong facebookService: " +phoneNumber+email);
+
+        if(phoneNumber == null && email == null){
+            return null;
+        }
+
+        CustomerSocialResponseDTO csDTO = new CustomerSocialResponseDTO(
+            cusName,
+            phoneNumber,
+            email,
+            facebookPage.getUserId(),
+            facebookPage.getCompanyId()
+        );
+
+        return csDTO;
     }
     
     public void handleFaceWebHook(JsonNode rootNode){
         System.out.println("Vào hàm xử lý facebook");
-        String chatContext = null;
-        String cusName = null;
-        String phoneNumber = null;
-        String email = null;
 
         JsonNode entryNode = rootNode.path("entry").get(0);
+        if(entryNode == null){
+            System.out.println("Không có entry node");
+            return;
+        }
+
         String pageId = getPageId(entryNode);
-        List<FacebookPage> facebookPages = facebookPageRepository.findAllByPageId(pageId);        
+        List<FacebookPage> facebookPages = facebookPageRepository.findAllByPageId(pageId);  
+        if(facebookPages.isEmpty()){
+            System.out.println("Không tìm thấy FacebookPage với pageId: " + pageId);
+        }
+
+        String typeJson;      
         // có thể báo lỗi k tìm thấy page ở đây
         for (FacebookPage facebookPage : facebookPages) {
             try {
-            if(entryNode.has("changes")){
-                // comment
-                chatContext = getChatFromComment(entryNode);
-                cusName = getNameFromComment(entryNode);
-            }
-            else if(entryNode.has("messaging")){
-                // tin nhan
-                chatContext = getChatFromMess(entryNode);
-                String senderId = getSenderId(entryNode);
+                if(entryNode.has("changes"))
+                    typeJson = "comment";
+                else if(entryNode.has("messaging"))
+                    typeJson = "messaging";
+                else
+                    typeJson = "unknown";
 
-                cusName = getNameFromFaceId(senderId, pageId, facebookPage.getLongPageAccessToken());
-            }
+                CustomerSocialResponseDTO csDTO;
 
-            System.out.println("Lấy thử chatcontext facebookService: " +chatContext);
-            // trích xuất email, số điện thoại
-            if(chatContext != null &&!chatContext.isEmpty()){
-                phoneNumber = TextChatService.getPhoneNumberFromTextChat(chatContext);
-                email = TextChatService.getEmailFromTextChat(chatContext);
-                System.out.println("Lấy thử số và email trong facebookService: " +phoneNumber+email);
-            }
-            if(phoneNumber == null && email == null){
-                return;
-            }
-            // kẹp vòng for để lấy 1 lúc 2 ô khách hàng
-            CustomerSocialResponseDTO csDTO = new CustomerSocialResponseDTO(
-                cusName,
-                phoneNumber,
-                email,
-                facebookPage.getUserId(),
-                facebookPage.getCompanyId()
-            );
-            System.out.println("CusDTO: " + csDTO);
-            DtoService.postDTO(csDTO, apiCusSocial);
+                switch (typeJson) {
+                    case "comment":
+                        csDTO = handleCommentFromNode(entryNode, facebookPage);
+                        break;
+                    case "messaging":
+                        csDTO = handleMessageFromNode(entryNode, facebookPage);
+                        break;
+                    default:
+                        csDTO = null;
+                        break;
+                }
+                
+                // nhúm json ra rồi gửi luôn cho BackenCrm
+                if(csDTO != null){
+                    System.out.println("CusDTO: " + csDTO);
+                    DtoService.postDTO(csDTO, apiCusSocial);
+                }
+                else{
+                    System.out.println("Khách hàng null");
+                }
 
             } catch (Exception e) {
                 System.out.print("Loi khi xu ly JSON: " + e);
