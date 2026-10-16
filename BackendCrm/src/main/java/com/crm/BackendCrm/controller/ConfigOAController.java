@@ -12,7 +12,6 @@ import com.crm.BackendCrm.security.JwtUtils;
 import com.crm.BackendCrm.service.ConfigOAService;
 import com.crm.BackendCrm.service.OathStateService;
 
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -37,7 +36,7 @@ public class ConfigOAController {
     public void redirectUrl(@RequestParam String code, @RequestParam String state, HttpServletResponse response) throws IOException {
         Long userId = oathStateService.getUserIdFromState(state);
         configOAService.configZaloOA();
-        
+
         response.sendRedirect("https://webhook.crmviet.vn");
     }
     

@@ -7,6 +7,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ConfigOAService {
     public void configZaloOA(){
-
+        
     }
 }

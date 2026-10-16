@@ -54,32 +54,38 @@ public class ZaloService {
         String name = res.path("data").path("display_name").asText();
         return name;
     }
+    public CustomerSocialResponseDTO handleOAChat(JsonNode rootNode){
+        String textChat = getChatFromMess(rootNode);
+        String senderId = getSenderId(rootNode);
+
+        String phoneNumber = TextChatService.getPhoneNumberFromTextChat(textChat);
+        String email = TextChatService.getEmailFromTextChat(textChat);
+        if(phoneNumber == null && email == null){
+            return null;
+        }
+        String cusName = getNameFromSenderId(senderId);
+
+        CustomerSocialResponseDTO cDto = new CustomerSocialResponseDTO(
+            cusName,
+            phoneNumber,
+            email,
+            2L,
+            1L
+        );
+
+        return cDto;
+    }
 
     public void handleZaloWebHook(JsonNode rootNode){
         System.out.println("Bắt đầu xử lý zalo Webhook");
+        CustomerSocialResponseDTO cDto;
         try {
-            String textChat = getChatFromMess(rootNode);
-            String senderId = getSenderId(rootNode);
-
-            String phoneNumber = TextChatService.getPhoneNumberFromTextChat(textChat);
-            String email = TextChatService.getEmailFromTextChat(textChat);
-
-            if(phoneNumber == null && email == null){
-                return;
+            cDto = handleOAChat(rootNode);
+            
+            if (cDto != null) {
+                System.out.println("Hoàn tất xử lý, chuẩn bị DTO để cho crm" + cDto);
+                DtoService.postDTO(cDto, apiCusSocial);
             }
-            System.out.println("Số điện thoại và email có 1 trong 2 đi tiếp");
-            String cusName = getNameFromSenderId(senderId);
-
-            // tao dto
-            CustomerSocialResponseDTO cDto = new CustomerSocialResponseDTO(
-                cusName,
-                phoneNumber,
-                email,
-                2L,
-                1L
-            );
-            System.out.println("Hoàn tất xử lý, chuẩn bị DTO để cho crm" + cDto);
-            DtoService.postDTO(cDto, apiCusSocial);
             
             System.out.println("Hoàn tất xử lý zalo Webhook");
         } catch (Exception e) {
