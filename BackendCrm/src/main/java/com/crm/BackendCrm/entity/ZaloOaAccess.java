@@ -24,8 +24,8 @@ public class ZaloOaAccess {
     @Column
     Long userId;
 
-    @Column
-    String accessToken;
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String accessToken;
 
     @Column
     String oaId;

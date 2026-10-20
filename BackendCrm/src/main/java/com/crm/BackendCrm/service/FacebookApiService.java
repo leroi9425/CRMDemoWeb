@@ -17,7 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor 
 public class FacebookApiService {
     @Value("${APP_ID}")
-    private static  String appId;
+    private String appId;
     @Value ("${APP_SECRET}")
     private String appSecret;
 

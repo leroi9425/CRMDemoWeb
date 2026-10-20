@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,6 +30,7 @@ public class ConfigOAController {
 
     @GetMapping("connect")
     public Map<String, String> connect(@RequestHeader("Authorization") String authHeader) {
+        System.out.println("ConfigOAController /connect");
         String jwt = authHeader.substring(7);
         Long userId = jwtUtils.extractUserId(jwt);
 
@@ -39,10 +41,19 @@ public class ConfigOAController {
     }
 
     @GetMapping("/redirect")
-    public void redirectUrl(@RequestParam String code, @RequestParam String state, @RequestParam String oaId, HttpServletResponse response) throws IOException {
-        Long userId = oathStateService.getUserIdFromState(state);
-        configOAService.configZaloOA(code, userId, oaId);
+    public void redirectUrl(
+        @RequestParam String code, 
+        @RequestParam String state, 
+        @RequestParam("oa_id") String oaId, 
+        HttpServletResponse response
+    ) throws IOException {
 
+        System.out.println("ConfigOAController /connect");
+        Long userId = oathStateService.getUserIdFromState(state);
+        System.out.println("ConfigOAController state" + state);
+        configOAService.configZaloOA(code, userId, oaId);
+        
+        System.out.println("config xong va redirect ve trang chu");
         response.sendRedirect("https://webhook.crmviet.vn");
     }
     

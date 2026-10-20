@@ -1,6 +1,5 @@
 package com.crm.BackendCrm.service;
 
-import com.crm.BackendCrm.repository.AdminRepository;
 import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -27,6 +26,7 @@ public class ZaloApiService {
     private String redirectUri = "https://webhook.crmviet.vn/api/zalo/redirect";
 
     public String oaConntectWithState(String state){
+        System.out.println("ZaloAPiService bat dau truy cap url de connect OA");
         return UriComponentsBuilder.fromUriString("https://oauth.zaloapp.com/v4/oa/permission")
                 .queryParam("app_id", appId)
                 .queryParam("redirect_uri", redirectUri)
@@ -37,6 +37,7 @@ public class ZaloApiService {
     }
 
     public ZaloTokenDTO getTokenFromCode(String oauthCode){
+        System.out.println("ZaloAPiService lay token bang code");
         MultiValueMap <String, String> body = new LinkedMultiValueMap<>();
         body.add("code", oauthCode);
         body.add("app_id", appId);
@@ -47,6 +48,7 @@ public class ZaloApiService {
         return handleResponse(response);
     }
     public ZaloTokenDTO getTokenFromRefreshToken(String refreshToken){
+        System.out.println("ZaloAPiService lay token tu refresh token "+refreshToken);
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("refresh_token", refreshToken);
         body.add("app_id",appId);
@@ -57,6 +59,7 @@ public class ZaloApiService {
         return handleResponse(response);
     }
     private ZaloTokenDTO handleResponse(String response){
+        System.out.println("ZaloAPiService xu ly response "+response);
         JsonNode jsonNode;
         try {
             jsonNode = objectMapper.readTree(response);
@@ -64,7 +67,7 @@ public class ZaloApiService {
             throw new RuntimeException("Lỗi khi chuyển hóa JSON từ Zalo", e);
         }
 
-        if(jsonNode.hasNonNull("access_token"))
+        if(!jsonNode.hasNonNull("access_token"))
             throw new IllegalStateException("Zalo không trả access_token: " + jsonNode);
 
         String accessToken = jsonNode.path("access_token").asText();
@@ -74,6 +77,7 @@ public class ZaloApiService {
         return new ZaloTokenDTO(accessToken, refreshToken, expiresIn);
     }
     private String getResponse(MultiValueMap <String, String> body){
+        System.out.println("ZaloAPiService nhan response");
         return client.post()
             .uri("https://oauth.zaloapp.com/v4/oa/access_token")
             .header("secret_key", secretKey)

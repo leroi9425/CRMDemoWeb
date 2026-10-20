@@ -16,7 +16,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "zalo_oa_r")
+@Table(name = "zalo_oa_refresh")
 public class ZaloOaRefresh {
     @Id 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,8 +25,8 @@ public class ZaloOaRefresh {
     @Column
     Long userId;
 
-    @Column
-    String refreshToken;
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String refreshToken;
 
     @Column
     String oaId;

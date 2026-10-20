@@ -21,6 +21,7 @@ public class ConfigOAService {
     private final ZaloApiService zaloApiService;
 
     public void configZaloOA(String oauthCode, Long userId, String oaId){
+        System.out.println("ConfigOAService bat dau config zalo voi userid:"+userId);
         ZaloTokenDTO zTokenDTO = zaloApiService.getTokenFromCode(oauthCode);
 
         storeAccessToken(zTokenDTO, userId, oaId);
@@ -28,6 +29,7 @@ public class ConfigOAService {
     }
 
     private void storeAccessToken(ZaloTokenDTO zDto, Long userId, String oaId){
+        System.out.println("ConfigOAService Bat dau luu access token");
         ZaloOaAccess accessToken = new ZaloOaAccess();
         accessToken.setAccessToken(zDto.accessToken());
         accessToken.setUserId(userId);
@@ -37,6 +39,7 @@ public class ConfigOAService {
         zaloOaAccessRepository.save(accessToken);
     }
     private void storeRefreshToken(ZaloTokenDTO zDto, Long userId, String oaId){
+        System.out.println("Bat dau luu refresh token");
         ZaloOaRefresh refreshToken = new ZaloOaRefresh();
         refreshToken.setOaId(oaId);
         refreshToken.setRefreshToken(zDto.refreshToken());

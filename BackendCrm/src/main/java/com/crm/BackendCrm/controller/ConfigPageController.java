@@ -41,8 +41,8 @@ public class ConfigPageController {
     
     @GetMapping("/redirect")    // facebook gọi về tg này
     public void  redirectUrl(@RequestParam String code, @RequestParam String state, HttpServletResponse response) throws IOException {
-        Long userId = oathStateService.getUserIdFromState(state);
-        configPageService.configFacebookPage(code, userId);
+        // Long userId = oathStateService.getUserIdFromState(state);
+        // configPageService.configFacebookPage(code, userId);
         
         response.sendRedirect("https://webhook.crmviet.vn");
     }
