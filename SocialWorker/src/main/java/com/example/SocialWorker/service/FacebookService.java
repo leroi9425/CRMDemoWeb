@@ -4,9 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.example.SocialWorker.dto.CustomerSocialResponseDTO;
 import com.example.SocialWorker.entity.FacebookPage;
@@ -18,12 +16,10 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor 
 public class FacebookService {
-    // private final String apiCusSocial = "http://localhost:8089/api/customer/social";
-    private final String apiCusSocial = "http://localhost:8089/api/customer/social";
-    private final String faceApi = "https://graph.facebook.com/v26.0/";
     @Value("${facebook.access.token}")
     private String facebookToken;
     private final FacebookPageRepository facebookPageRepository;
+    private final CallApiService callApiService;
 
     public String getChatFromComment(JsonNode entryNode){
         return entryNode.path("changes").get(0).path("value").path("message").asText();
@@ -45,8 +41,7 @@ public class FacebookService {
         // String api = faceApi + faceId + "?fields=name&access_token=" + facebookToken;
         System.out.println("Lấy tên từ facebookId: " + faceId);
         System.out.println("Lấy tên từ pageId: " + pageId);
-        String api = faceApi + faceId + "?fields=name";
-        JsonNode cusInfo = DtoService.getDTO(api, Map.of("Authorization", "Bearer " + longPageAccessToken), null);
+        JsonNode cusInfo = callApiService.getFaceName(Map.of("Authorization", "Bearer " + longPageAccessToken), faceId);
         return cusInfo.path("name").asText();
     }
     public String getPhoneNumberFromNode(JsonNode entryNode){
@@ -148,7 +143,7 @@ public class FacebookService {
                 // nhúm json ra rồi gửi luôn cho BackenCrm
                 if(csDTO != null){
                     System.out.println("CusDTO: " + csDTO);
-                    DtoService.postDTO(csDTO, apiCusSocial);
+                    callApiService.postCustomerSocialDTOToCrm(csDTO);
                 }
                 else{
                     System.out.println("Khách hàng null");

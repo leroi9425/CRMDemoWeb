@@ -23,7 +23,10 @@ public class ZaloOaAccess {
     @Column
     Long userId;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column
+    Long companyId;
+
+    @Column(columnDefinition = "TEXT", nullable = false, unique = true)
     private String accessToken;
 
     @Column

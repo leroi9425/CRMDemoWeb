@@ -25,10 +25,13 @@ public class ZaloOaRefresh {
     @Column
     Long userId;
 
+    @Column
+    Long companyId;
+
     @Column(columnDefinition = "TEXT", nullable = false)
     private String refreshToken;
 
-    @Column
+    @Column (unique = true)
     String oaId;
 
     @Column
