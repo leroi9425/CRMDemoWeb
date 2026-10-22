@@ -63,6 +63,7 @@ public class CallApiService {
         return null;
     }
     // gửi method get đến api của zalo/facebook, thường dùng để lấy tên khách hàng
+    /// Ham can sua
     public JsonNode getFaceName(Map<String, String> headers, String faceId){
         String api = faceApi + faceId + "?fields=name";
 
@@ -70,14 +71,14 @@ public class CallApiService {
         System.out.println("api = " + api);
         System.out.println("headers = " + headers);
 
-        String result = client.method(HttpMethod.GET)
+        String response = client.method(HttpMethod.GET)
             .uri(URI.create(api))
             .headers((h) -> headers.forEach(h::add))
             .retrieve()
             .body(String.class);
-        System.out.println("Kết quả gửi cusDTO: "+ result);
+        System.out.println("Kết quả gửi cusDTO: "+ response);
         try {
-            JsonNode rootNode = obm.readTree(result);
+            JsonNode rootNode = obm.readTree(response);
 
             return  rootNode;
         } catch (Exception e) {

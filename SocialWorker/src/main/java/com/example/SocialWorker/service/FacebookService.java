@@ -8,6 +8,10 @@ import org.springframework.stereotype.Service;
 
 import com.example.SocialWorker.dto.CustomerSocialResponseDTO;
 import com.example.SocialWorker.entity.FacebookPage;
+import com.example.SocialWorker.exception.FacebookPermissionException;
+import com.example.SocialWorker.exception.FacebookResponseNullException;
+import com.example.SocialWorker.exception.FacebookTokenExpiredException;
+import com.example.SocialWorker.exception.NameEmptyException;
 import com.example.SocialWorker.repository.FacebookPageRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -37,22 +41,56 @@ public class FacebookService {
         return entryNode.path("messaging").get(0).path("message").path("text").asText();
     }
 
-    public String getNameFromFaceId(String faceId, String pageId, String longPageAccessToken){
+    public String getNameFromSenderId(String senderId, String longPageAccessToken){
         // String api = faceApi + faceId + "?fields=name&access_token=" + facebookToken;
-        System.out.println("Lấy tên từ facebookId: " + faceId);
-        System.out.println("Lấy tên từ pageId: " + pageId);
-        JsonNode cusInfo = callApiService.getFaceName(Map.of("Authorization", "Bearer " + longPageAccessToken), faceId);
+        System.out.println("Lấy tên từ facebookId cua sendr: " + senderId);
+        JsonNode res = callApiService.getFaceName(Map.of("Authorization", "Bearer " + longPageAccessToken), senderId);
+        JsonNode cusInfo = handleResponse(res);
+        String name = cusInfo.path("name").asText();
+        if(name.isEmpty())
+            throw new NameEmptyException("Tên của khách lấy từ senderId facebook bị rỗng");
         return cusInfo.path("name").asText();
     }
-    public String getPhoneNumberFromNode(JsonNode entryNode){
+    private JsonNode handleResponse(JsonNode res){
+        if(res == null)
+            throw new FacebookResponseNullException("Response rỗng khi nhận response từ Facebook");
+
+        int err = res.path("error").path("code").asInt(0);
+        if (err == 0)
+            return res;
+        if (err == 3)
+            throw new FacebookPermissionException(
+                "Vấn đề về tính năng hoặc quyền. Đảm bảo ứng dụng của bạn có chức năng hoặc quyền cần thiết để thực hiện lệnh gọi này." + 
+                res.path("error").path("message").asText()
+            );
+        if (err == 190){
+            throw new FacebookTokenExpiredException("Token hết hạn hãy lấy token mới");
+        }
+        return res;
+    }
+    public String getPhoneNumberFromComment(JsonNode entryNode){
         String chatContext = getChatFromComment(entryNode);
         if(chatContext != null &&!chatContext.isEmpty()){
             return TextChatService.getPhoneNumberFromTextChat(chatContext);
         }
         return null;
     }
-    public String getEmailFromNode(JsonNode entryNode){
-        String chatContext = getChatFromComment(entryNode);
+    public String getPhoneNumberFromMess(JsonNode entryNode){
+        String chatContext = getChatFromMess(entryNode);
+        if(chatContext != null &&!chatContext.isEmpty()){
+            return TextChatService.getPhoneNumberFromTextChat(chatContext);
+        }
+        return null;
+    }
+    public String getEmailFromComment(JsonNode entryNode){
+        String chatContext = getChatFromMess(entryNode);
+        if(chatContext != null &&!chatContext.isEmpty()){
+            return TextChatService.getEmailFromTextChat(chatContext);
+        }
+        return null;
+    }
+    public String getEmailFromMess(JsonNode entryNode){
+        String chatContext = getChatFromMess(entryNode);
         if(chatContext != null &&!chatContext.isEmpty()){
             return TextChatService.getEmailFromTextChat(chatContext);
         }
@@ -60,8 +98,8 @@ public class FacebookService {
     }
     public CustomerSocialResponseDTO handleCommentFromNode(JsonNode entryNode, FacebookPage facebookPage) {       
         String cusName = getNameFromComment(entryNode);
-        String phoneNumber = getPhoneNumberFromNode(entryNode);
-        String email = getEmailFromNode(entryNode);
+        String phoneNumber = getPhoneNumberFromComment(entryNode);
+        String email = getEmailFromComment(entryNode);
         System.out.println("Lấy thử số và email trong facebookService: " +phoneNumber+email);
 
         if(phoneNumber == null && email == null){
@@ -80,9 +118,9 @@ public class FacebookService {
     }
     public CustomerSocialResponseDTO handleMessageFromNode(JsonNode entryNode, FacebookPage facebookPage){
         String senderId = getSenderId(entryNode);
-        String cusName = getNameFromFaceId(senderId, facebookPage.getPageId(), facebookPage.getLongPageAccessToken());
-        String phoneNumber = getPhoneNumberFromNode(entryNode);
-        String email = getEmailFromNode(entryNode);
+        String cusName = getNameFromSenderId(senderId, facebookPage.getLongPageAccessToken());
+        String phoneNumber = getPhoneNumberFromMess(entryNode);
+        String email = getEmailFromMess(entryNode);
         System.out.println("Lấy thử số và email trong facebookService: " +phoneNumber+email);
 
         if(phoneNumber == null && email == null){
@@ -110,7 +148,7 @@ public class FacebookService {
         }
 
         String pageId = getPageId(entryNode);
-        List<FacebookPage> facebookPages = facebookPageRepository.findAllByPageId(pageId);  
+        List<FacebookPage> facebookPages = facebookPageRepository.findAllByPageId(pageId);
         if(facebookPages.isEmpty()){
             System.out.println("Không tìm thấy FacebookPage với pageId: " + pageId);
         }
@@ -118,39 +156,34 @@ public class FacebookService {
         String typeJson;      
         // có thể báo lỗi k tìm thấy page ở đây
         for (FacebookPage facebookPage : facebookPages) {
-            try {
-                if(entryNode.has("changes"))
-                    typeJson = "comment";
-                else if(entryNode.has("messaging"))
-                    typeJson = "messaging";
-                else
-                    typeJson = "unknown";
+            if(entryNode.has("changes"))
+                typeJson = "comment";
+            else if(entryNode.has("messaging"))
+                typeJson = "messaging";
+            else
+                typeJson = "unknown";
 
-                CustomerSocialResponseDTO csDTO;
+            CustomerSocialResponseDTO csDTO;
 
-                switch (typeJson) {
-                    case "comment":
-                        csDTO = handleCommentFromNode(entryNode, facebookPage);
-                        break;
-                    case "messaging":
-                        csDTO = handleMessageFromNode(entryNode, facebookPage);
-                        break;
-                    default:
-                        csDTO = null;
-                        break;
-                }
-                
-                // nhúm json ra rồi gửi luôn cho BackenCrm
-                if(csDTO != null){
-                    System.out.println("CusDTO: " + csDTO);
-                    callApiService.postCustomerSocialDTOToCrm(csDTO);
-                }
-                else{
-                    System.out.println("Khách hàng null");
-                }
-
-            } catch (Exception e) {
-                System.out.print("Loi khi xu ly JSON: " + e);
+            switch (typeJson) {
+                case "comment":
+                    csDTO = handleCommentFromNode(entryNode, facebookPage);
+                    break;
+                case "messaging":
+                    csDTO = handleMessageFromNode(entryNode, facebookPage);
+                    break;
+                default:
+                    csDTO = null;
+                    break;
+            }
+            
+            // nhúm json ra rồi gửi luôn cho BackenCrm
+            if(csDTO != null){
+                System.out.println("CusDTO: " + csDTO);
+                callApiService.postCustomerSocialDTOToCrm(csDTO);
+            }
+            else{
+                System.out.println("Khách hàng null");
             }
         }
     }

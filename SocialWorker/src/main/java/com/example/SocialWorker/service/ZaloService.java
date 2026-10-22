@@ -1,6 +1,7 @@
 package com.example.SocialWorker.service;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,7 @@ import com.example.SocialWorker.dto.CustomerSocialResponseDTO;
 import com.example.SocialWorker.entity.ZaloOaAccess;
 import com.example.SocialWorker.entity.ZaloOaRefresh;
 import com.example.SocialWorker.exception.NameEmptyException;
+import com.example.SocialWorker.exception.ZaloRefreshTokenExpiresException;
 import com.example.SocialWorker.exception.ZaloResponseNullException;
 import com.example.SocialWorker.exception.ZaloTokenException;
 import com.example.SocialWorker.repository.ZaloOaAccessRepository;
@@ -57,7 +59,7 @@ public class ZaloService {
         }
         catch( ZaloTokenException e ){
             // lấy lại token mới
-            String accessToken = getNewAccessToken(oAccess.getOaId(), oAccess);
+            String accessToken = getNewAccessToken(oAccess);
             res = callApiService.getZaloName(Map.of("access_token", accessToken), jsonData);
             return handleGetNameResponse(res);
         }
@@ -77,9 +79,19 @@ public class ZaloService {
             return res.path("data").path("display_name").asText();
         }
         if(err == -216){
-            throw new ZaloTokenException(err, null);
+            throw new ZaloTokenException(err, "Access Token bi loi: "+res);
         }
         return "";
+    }
+    private JsonNode handleZaloTokenResponse(JsonNode res){
+        if(res == null)
+            throw new ZaloResponseNullException("Response trả về của zalo null: "+res);
+        int err = res.path("error").asInt(0);
+        if(err == -216){ // xem lai xem ma loi bn
+            throw new ZaloRefreshTokenExpiresException("Refresh Token het han: "+res);
+        } 
+
+        return res;
     }
     private boolean isAccessTokenExpired(ZaloOaAccess zaloOaAccess){
         if(zaloOaAccess.getExpiresIn() < System.currentTimeMillis())
@@ -94,9 +106,11 @@ public class ZaloService {
         return zaloOaRefreshRepository.findByOaId(oaId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Khong tim thay refresh token cho oa id: "+oaId));
     }
-    private String getNewAccessToken(String oaId, ZaloOaAccess oldAccess){
+    private String getNewAccessToken(ZaloOaAccess oldAccess){
+        String oaId = oldAccess.getOaId();
         ZaloOaRefresh refresh = getRefreshByOaId(oaId);
-        JsonNode zaloTokens = callApiService.postToGetZaloToken(refresh.getRefreshToken());
+        JsonNode res = callApiService.postToGetZaloToken(refresh.getRefreshToken());
+        JsonNode zaloTokens = handleZaloTokenResponse(res); 
 
         storeAccessToken(zaloTokens, oldAccess.getUserId(), oldAccess.getCompanyId(), oaId);
         storeRefreshToken(zaloTokens, oldAccess.getUserId(), oldAccess.getCompanyId(), oaId);
@@ -118,7 +132,7 @@ public class ZaloService {
 
         ZaloOaAccess zaloOaAccess = getAccessByOaId(oaId);
         if(isAccessTokenExpired(zaloOaAccess)){
-            String newAccessToken = getNewAccessToken(oaId, zaloOaAccess);
+            String newAccessToken = getNewAccessToken(zaloOaAccess);
 
             zaloOaAccess.setAccessToken(newAccessToken);
         }
@@ -126,7 +140,7 @@ public class ZaloService {
         String cusName = getNameFromSenderId(senderId, zaloOaAccess);
 
         if(cusName.isEmpty()){
-            String newAccessToken = getNewAccessToken(oaId, zaloOaAccess);
+            String newAccessToken = getNewAccessToken(zaloOaAccess);
             zaloOaAccess.setAccessToken(newAccessToken);
             cusName = getNameFromSenderId(senderId, zaloOaAccess);
         }
@@ -175,25 +189,16 @@ public class ZaloService {
     public void handleZaloWebHook(JsonNode rootNode){
         System.out.println("Bắt đầu xử lý zalo Webhook");
         CustomerSocialResponseDTO cDto;
-        try {
-            cDto = handleOAChat(rootNode);
-            
-            if (cDto != null) {
-                System.out.println("Hoàn tất xử lý, chuẩn bị DTO để cho crm" + cDto);
-                callApiService.postCustomerSocialDTOToCrm(cDto);
-            }
-            else{
-                System.out.println("Lỗi do json cDto null");
-            }
-            
-            System.out.println("Hoàn tất xử lý zalo Webhook");
-        } 
-        catch (NameEmptyException e){
-            System.out.println(e.getMessage());
+        cDto = handleOAChat(rootNode);
+        
+        if (cDto != null) {
+            System.out.println("Hoàn tất xử lý, chuẩn bị DTO để cho crm" + cDto);
+            callApiService.postCustomerSocialDTOToCrm(cDto);
         }
-        catch (Exception e) {
-            System.out.println("Lỗi khi xử lý Zalo Webhook");
-            System.out.println(e);
+        else{
+            System.out.println("Lỗi do json cDto null");
         }
+        
+        System.out.println("Hoàn tất xử lý zalo Webhook");
     }
 }
