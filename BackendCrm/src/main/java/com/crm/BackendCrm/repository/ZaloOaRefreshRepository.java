@@ -12,4 +12,5 @@ public interface ZaloOaRefreshRepository extends JpaRepository<ZaloOaRefresh, Lo
     Boolean existsByOaIdAndCompanyId(String oaId, String companyId);
     Optional<ZaloOaRefresh> findByOaIdAndCompanyId(String oaId, String companyId);
     Optional<ZaloOaRefresh> findByOaId(String oaId);
+    Boolean existsByIdAndUserId(Long id, Long userId);
 }

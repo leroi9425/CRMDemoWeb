@@ -79,6 +79,7 @@ public class ZaloService {
             return res.path("data").path("display_name").asText();
         }
         if(err == -216){
+            // mã này 
             throw new ZaloTokenException(err, "Access Token bi loi: "+res);
         }
         return "";
@@ -87,7 +88,7 @@ public class ZaloService {
         if(res == null)
             throw new ZaloResponseNullException("Response trả về của zalo null: "+res);
         int err = res.path("error").asInt(0);
-        if(err == -216){ // xem lai xem ma loi bn
+        if(err == -14014){ // đã test và ghi trong nhật ký ngày 
             throw new ZaloRefreshTokenExpiresException("Refresh Token het han: "+res);
         } 
 

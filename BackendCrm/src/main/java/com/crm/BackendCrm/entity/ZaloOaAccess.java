@@ -33,5 +33,8 @@ public class ZaloOaAccess {
     String oaId;
 
     @Column
+    String oaName;
+
+    @Column
     Long expiresIn;
 }

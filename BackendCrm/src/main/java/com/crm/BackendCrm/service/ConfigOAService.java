@@ -39,11 +39,13 @@ public class ConfigOAService {
 
         ZaloOaAccess accessToken = zaloOaAccessRepository.findByOaId(oaId)
         .orElseGet(ZaloOaAccess::new);
+        String oaName = zaloApiService.getOaName(zDto.accessToken());
         
         accessToken.setAccessToken(zDto.accessToken());
         accessToken.setUserId(userId);
         accessToken.setExpiresIn(zDto.expiresIn()*1000 + System.currentTimeMillis()); // chuyển sang milli giây tính cho dễ
         accessToken.setOaId(oaId);
+        accessToken.setOaName(oaName);
         accessToken.setCompanyId(user.getCompany().getId());
 
         zaloOaAccessRepository.save(accessToken);

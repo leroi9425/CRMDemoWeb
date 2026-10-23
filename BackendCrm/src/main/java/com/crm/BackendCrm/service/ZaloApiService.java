@@ -1,14 +1,18 @@
 package com.crm.BackendCrm.service;
 
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.crm.BackendCrm.dto.Response.ZaloTokenDTO;
+import com.crm.BackendCrm.exception.ZaloAccessTokenException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -36,6 +40,13 @@ public class ZaloApiService {
                 .toUriString();
     }
 
+    public String getOaName(String accessToken){
+        System.out.println("ZaloAPiService bat dau truy cap url de lay thon tin OA de lay ten OA");
+        
+        String res = callApiOaGetOa(accessToken);
+        return getNameFromRes(res);
+    }
+
     public ZaloTokenDTO getTokenFromCode(String oauthCode){
         System.out.println("ZaloAPiService lay token bang code");
         MultiValueMap <String, String> body = new LinkedMultiValueMap<>();
@@ -43,9 +54,9 @@ public class ZaloApiService {
         body.add("app_id", appId);
         body.add("grant_type", "authorization_code");
 
-        String response = getResponse(body);
+        String response = callApiOaAccessToken(body);
 
-        return handleResponse(response);
+        return handleTokenResponse(response);
     }
     public ZaloTokenDTO getTokenFromRefreshToken(String refreshToken){
         System.out.println("ZaloAPiService lay token tu refresh token "+refreshToken);
@@ -54,11 +65,11 @@ public class ZaloApiService {
         body.add("app_id",appId);
         body.add("grant_type", "refresh_token");
 
-        String response = getResponse(body);
+        String response = callApiOaAccessToken(body);
 
-        return handleResponse(response);
+        return handleTokenResponse(response);
     }
-    private ZaloTokenDTO handleResponse(String response){
+    private ZaloTokenDTO handleTokenResponse(String response){
         System.out.println("ZaloAPiService xu ly response "+response);
         JsonNode jsonNode;
         try {
@@ -76,8 +87,30 @@ public class ZaloApiService {
 
         return new ZaloTokenDTO(accessToken, refreshToken, expiresIn);
     }
-    private String getResponse(MultiValueMap <String, String> body){
-        System.out.println("ZaloAPiService nhan response");
+    private String getNameFromRes(String res){
+        try {
+            JsonNode oaInfo = objectMapper.readTree(res);
+            int err = oaInfo.path("error").asInt(0);
+            if (err == -216)
+                throw new ZaloAccessTokenException("Access token hết hạn hoặc lỗi, hãy lấy lại token mới "+ res);
+            if (err == 0)
+                return oaInfo.path("data").path("name").asText();
+            else
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Zalo trả lỗi: " + oaInfo.path("message").asText());
+        } catch (Exception e) {
+            System.out.println("lỗi khi lấy tên từ response: "+e);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Zalo trả lỗi: " + e);
+        }
+    }
+    private String callApiOaGetOa(String accessToken){
+        return client.get()
+            .uri("https://openapi.zalo.me/v2.0/oa/getoa")
+            .header("access_token", accessToken)
+            .retrieve()
+            .body(String.class);
+    }
+    private String callApiOaAccessToken(MultiValueMap <String, String> body){
+        System.out.println("ZaloAPiService nhan response tu method post");
         return client.post()
             .uri("https://oauth.zaloapp.com/v4/oa/access_token")
             .header("secret_key", secretKey)

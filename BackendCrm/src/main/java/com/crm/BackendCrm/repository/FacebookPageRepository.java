@@ -9,6 +9,7 @@ import com.crm.BackendCrm.entity.FacebookPage;
 
 
 public interface FacebookPageRepository extends JpaRepository<FacebookPage, Long> {
+    Boolean existsByIdAndUserId(Long id, Long userId);
     Optional<FacebookPage> findByPageId(String pageId);
     Optional<FacebookPage> findByPageIdAndCompany_Id(String pageId, Long companyId);
     Boolean existsByPageId(String pageId);
