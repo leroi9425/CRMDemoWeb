@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { getFacebookWebHook } from "./api/webhookApi";
 import { useAuth } from "./context/AuthContext";
 import CustomerView from "./components/CustomerView";
 import UserView from "./components/UserView";
+import SocialView from "./components/SocialView";
 import Login from "./components/Login";
 import ProductView from "./components/ProductView";
 import { subscribeToPush } from "./services/pushNotification";
@@ -45,13 +45,6 @@ function MainLayout() {
         client.deactivate();
     };
   }, [auth]);
-
-    const handleConnectFacebook = async () => {
-      console.log("Kết nối Facebook Page");
-      const res = await getFacebookWebHook();
-      console.log("Kết nối Facebook Page thành công, chuyển hướng đến:", res.data.url);
-      window.location.href = res.data.url;  // Chuyển hướng người dùng đến URL trả về từ API
-    };
 
   return (
     <div className="text-slate-800 antialiased min-h-screen w-full flex flex-col bg-slate-50 relative">
@@ -116,26 +109,20 @@ function MainLayout() {
                   Công ty
                 </button>
               )}
+              {true && (
+                <button 
+                  onClick={() => setActiveTab("socials")}
+                  className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'socials' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+                >
+                  Mạng xã hội
+                </button>
+              )}
             </div>
 
             <div className="flex items-center space-x-4">
                 <span className="text-sm font-medium text-slate-600">Xin chào, {auth?.username}</span>
                 <button onClick={logoutUser} className="text-sm font-medium text-red-500 hover:text-red-700 transition-colors">
                     Đăng xuất
-                </button>
-                <button
-                    onClick={handleConnectFacebook}
-                    className="flex items-center gap-3 rounded-lg bg-[#1877F2] px-5 py-3 font-medium text-white shadow-sm transition hover:bg-[#166FE5] active:scale-[0.98]"
-                    >
-                    <svg
-                        className="h-5 w-5"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                    >
-                        <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.099 4.388 23.093 10.125 24v-8.437H7.078v-3.49h3.047V9.413c0-3.025 1.792-4.704 4.533-4.704 1.312 0 2.686.235 2.686.235v2.973h-1.514c-1.491 0-1.955.93-1.955 1.886v2.27h3.328l-.532 3.49h-2.796V24C19.612 23.093 24 18.099 24 12.073z" />
-                    </svg>
-
-                    Kết nối Facebook Page
                 </button>
             </div>
           </div>
@@ -147,6 +134,7 @@ function MainLayout() {
       {activeTab === "roles" && auth?.permissions?.includes("QUAN_LY_QUYEN") && <RoleManagerTab />}
       {activeTab === "users" && auth?.permissions?.includes("QUAN_LY_USER") && <UserView />}
       {activeTab == "companies" && auth?.permissions?.includes("QUAN_LY_CONG_TY") && <CompanyView />}
+      {activeTab == "socials" && <SocialView />}
     </div>
   );
 }

@@ -3,6 +3,10 @@ package com.example.SocialWorker.service;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
+import com.example.SocialWorker.exception.FacebookPermissionException;
+import com.example.SocialWorker.exception.FacebookTokenExpiredException;
+import com.example.SocialWorker.exception.NameEmptyException;
+import com.example.SocialWorker.exception.ZaloRefreshTokenExpiresException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -39,7 +43,21 @@ public class RabbitConsumeSer{
                 default:
                     break;
             }
-        } catch (Exception e) {
+        } 
+        catch (NameEmptyException e){
+            System.out.println(e.getMessage());
+        }
+        catch (ZaloRefreshTokenExpiresException e){
+            // luu msg vao db
+            // notifice cho khach de khach vao lay lai token
+        }
+        catch (FacebookPermissionException e){
+            System.out.println(e.getMessage());
+        }
+        catch (FacebookTokenExpiredException e){
+            System.out.println(e.getMessage());
+        }
+        catch (Exception e) {
             System.out.println("Loi khi xu ly Rabbit: " + e);
         }
     }

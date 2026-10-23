@@ -65,7 +65,5 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
         }
         filterChain.doFilter(request, response);
-        
-        System.out.println("Kết thúc doFilter");
     }
 }

@@ -27,29 +27,46 @@ public class CustomerSocialService {
     private final CustomerService customerService;
     private final UserRepository userRepository;
     private final EmailRepository emailRepository;
-
     private  final CompanyRepository companyRepository;
+
+    public boolean isEmailExist(String emailAddress, long userId){
+        Email email = emailRepository.findByEmailAddress(emailAddress)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy email: "+emailAddress));
+
+        String customerCode = email.getCustomerCode();
+        Customer customer = customerRepository.findByCustomerCode(customerCode)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy khách hàng có code:"+customerCode));
+
+        long cuserId = customer.getUser().getId();
+        if(cuserId == userId)
+            return true;
+        else
+            return false;
+    }
+    public boolean isPhoneExist(String phoneNumber){
+        return true;
+    }
     
     public ResponseEntity<?> reviceCustomer(CustomerSocialRequestDTO data){
         try {
             String customerCode = customerService.createCustomerCode();
-            System.out.println("System.out.println(customerCode);");
             System.out.println(customerCode);
             System.out.println("end System.out.println(customerCode);");
             System.out.println("System.out.println(data);");
             System.out.println(data);
             System.out.println("end System.out.println(data);");
             // check trùng email, sdt
-            if(emailRepository.findByEmailAddress(data.email()) != null && customerRepository.existsByPhoneNumber(data.phoneNumber())){
-                return ResponseEntity.notFound().build();
-            }
+            // if(emailRepository.findByEmailAddress(data.email()) != null && customerRepository.existsByPhoneNumberAndUserId(data.phoneNumber(), data.userId())){
+            //     System.out.println("Trùng email và số điện thoại");
+            //     return ResponseEntity.notFound().build();
+            // }
 
-            User user = userRepository.findById((long)2)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ko tim thay user"));
-            Company company = companyRepository.findById((long)1)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            User user = userRepository.findById(data.userId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ko tim thay user id:" + data.userId()));
+            Company company = companyRepository.findById(data.companyId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ko tim thay cong ty id:" + data.companyId()));
 
-
+            System.out.println("Tạo customer để thêm");
             Customer customer = new Customer();
             customer.setCustomerName(data.name());
             customer.setPhoneNumber(data.phoneNumber());
