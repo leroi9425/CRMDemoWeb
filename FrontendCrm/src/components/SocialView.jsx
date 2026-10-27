@@ -11,8 +11,6 @@ import { SOCIAL_PLATFORMS } from "./SocialPlatforms";
 // import { getTiktokAccounts, disconnectTiktok } from "../api/tiktokApi";
 // import { getShopeeShops, disconnectShopee } from "../api/shopeeApi";
 
-
-
 export default function SocialView() {
     const { auth } = useAuth();
     

@@ -50,6 +50,7 @@ public class SocialMediaController {
     }
     @DeleteMapping("/zaloOa/{id}")
     public ResponseEntity deleteZaloOa(@RequestHeader("Authorization") String authHeader, @PathVariable Long id){
+        System.out.println("Xóa oa có id: "+id);
         Long userId = getUserIdByAuth(authHeader);
 
         zaloOaService.delete(id, userId);
