@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 
 import com.crm.BackendCrm.service.PermissionService;
 import com.crm.BackendCrm.dto.Request.PermissionRequestDTO;
+import com.crm.BackendCrm.dto.Response.ColumnPermissionResponseDTO;
 import com.crm.BackendCrm.dto.Response.PermissionResponseDTO;
 
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,12 @@ public class PermissionController {
     // API 1: Trả về JSON cây quyền cho Frontend
     @GetMapping("/tree")
     public ResponseEntity<List<PermissionResponseDTO>> getTree() {
-        List<PermissionResponseDTO> tree = permissionService.getPermissionTree();
+        List<PermissionResponseDTO> tree = permissionService.getPermissionTree2();
+        return ResponseEntity.ok(tree);
+    }
+    @GetMapping("/tree/column")
+    public ResponseEntity<List<ColumnPermissionResponseDTO>> getTreeColumn() {
+        List<ColumnPermissionResponseDTO> tree = permissionService.getColumnPermissionTree();
         return ResponseEntity.ok(tree);
     }
 

@@ -2,7 +2,9 @@ package com.crm.BackendCrm.service;
 
 import com.crm.BackendCrm.dto.Request.UserRequestDTO;
 import com.crm.BackendCrm.dto.Response.UserResponseDTO;
+import com.crm.BackendCrm.entity.Role;
 import com.crm.BackendCrm.entity.User;
+import com.crm.BackendCrm.repository.RoleRepository;
 import com.crm.BackendCrm.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
 
     public List<UserResponseDTO> getAll() {
         return userRepository.findAll().stream().map(this::toDTO).toList();
@@ -68,6 +71,19 @@ public class UserService {
         Long companyId = user.getCompany().getId();
 
         return userRepository.findByCompanyId(companyId).stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
+    public boolean isAdmin(Long userId){
+        User user = userRepository.findById(userId).
+        orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "user not found"));
+
+        Role role = roleRepository.findByUsers_Username(user.getUsername())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy role của user"));
+
+        if(role.getName() == "USER")
+            return true;
+        else
+            return false;
     }
 
     private UserResponseDTO toDTO(User u) {

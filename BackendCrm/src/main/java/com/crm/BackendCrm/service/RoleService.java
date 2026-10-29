@@ -85,7 +85,6 @@ public class RoleService {
         Role r = roleRepository.findById(id).orElseThrow(() -> new RuntimeException("Role not found"));
         return new RoleDTO(r.getId(), r.getName(), r.getDescription());
     }
-
     @Transactional
     public RoleDTO createRole(RoleDTO dto) {
         Role role = new Role();

@@ -10,6 +10,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
     Optional<User> findByUsername(String username);
-    java.util.List<User> findByRoles_Id(Long roleId);
+    List<User> findByRoles_Id(Long roleId);
     List<User> findByCompanyId(Long companyId); // JPA sẽ tự động tạo querry
 }
