@@ -1,40 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../api/axiosInstance';
-
-// =========================================================================
-// 1. CÂY QUYỀN ĐỆ QUY
-// =========================================================================
-const TreeNode = ({ node, checkedIds, handleCheck }) => {
-  const isChecked = checkedIds.includes(node.id);
-  const hasChildren = node.children && node.children.length > 0;
-
-  return (
-    <div className="ml-6 mt-2">
-      <label className={`flex items-center cursor-pointer ${hasChildren ? 'font-bold' : 'font-normal'}`}>
-        <input
-          type="checkbox"
-          checked={isChecked}
-          onChange={(e) => handleCheck(node, e.target.checked)}
-          className="mr-3 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-        />
-        <span className="text-slate-800">{node.name}</span>
-        {node.description && (
-          <span className="text-slate-500 text-xs ml-2 font-normal">
-            - {node.description}
-          </span>
-        )}
-      </label>
-
-      {hasChildren && (
-        <div className="border-l border-dashed border-slate-300 pl-2 mt-1">
-          {node.children.map(child => (
-            <TreeNode key={child.id} node={child} checkedIds={checkedIds} handleCheck={handleCheck} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
+import { getRoles, getRolePermission, putRoles, postRoles, postRolePermission } from '../api/roleApi';
+import { getPermissionTree } from '../api/permissionApi';
+import TreeNode from './Permission/TreeNode'
 
 // =========================================================================
 // 2. MÀN HÌNH DANH SÁCH ROLE
@@ -50,7 +18,8 @@ const RoleList = ({ onEditRole, onCreateRole }) => {
   const fetchRoles = async () => {
     setLoading(true);
     try {
-      const res = await axiosInstance.get('/roles');
+      // const res = await axiosInstance.get('/roles');
+      const res = await getRoles();
       setRoles(res.data);
     } catch (error) {
       console.error("Lỗi lấy danh sách:", error);
@@ -128,11 +97,12 @@ const RoleEdit = ({ currentRole, onBack }) => {
   const fetchTreeAndPermissions = async () => {
     setLoading(true);
     try {
-      const treeRes = await axiosInstance.get('/permissions/tree');
+      const treeRes = await axiosInstance.get('/permissions/tree/column');
       setTreeData(treeRes.data);
 
       if (isEditing) {
-        const roleRes = await axiosInstance.get(`/roles/${currentRole.id}/permissions`);
+        // const roleRes = await axiosInstance.get(`/roles/${currentRole.id}/permissions`);
+        const roleRes = await getRolePermission(currentRole.id);
         setCheckedIds(roleRes.data);
       }
     } catch (error) {
@@ -163,16 +133,20 @@ const RoleEdit = ({ currentRole, onBack }) => {
     try {
       let savedRole;
       if (isEditing) {
-        const res = await axiosInstance.put(`/roles/${currentRole.id}`, formData);
+        // const res = await axiosInstance.put(`/roles/${currentRole.id}`, formData);
+        const res = await putRoles(currentRole.id, data);
         savedRole = res.data;
       } else {
-        const res = await axiosInstance.post(`/roles`, formData);
+        // const res = await axiosInstance.post(`/roles`, formData);
+        const res = await postRoles(formData);
         savedRole = res.data;
       }
 
-      await axiosInstance.post(`/roles/${savedRole.id}/permissions`, {
-        permissionIds: checkedIds
-      });
+      // await axiosInstance.post(`/roles/${savedRole.id}/permissions`, {
+      //   permissionIds: checkedIds
+      // });
+
+      postRolePermission(savedRole.id, {permissionIds: checkedIds})
 
       alert("Cập nhật thành công!");
       onBack();
@@ -226,10 +200,21 @@ const RoleEdit = ({ currentRole, onBack }) => {
 
       <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
         <h3 className="text-lg font-semibold text-slate-800 mb-4 border-b pb-2">Chọn quyền</h3>
-        <div className="bg-slate-50 p-6 rounded border border-slate-200 h-96 overflow-y-auto">
-          {treeData.map(rootNode => (
-            <TreeNode key={rootNode.id} node={rootNode} checkedIds={checkedIds} handleCheck={handleCheck} />
-          ))}
+        <div className="bg-slate-50 p-6 rounded border border-slate-200 min-h-[400px] overflow-x-auto">
+          <div className="flex justify-center flex-wrap gap-12 items-start min-w-max mx-auto">
+            {treeData.map((colData, colIndex) => (
+              <div key={colData.column ?? colIndex} className="space-y-4 min-w-[260px]">
+                {colData.listPermission?.map(rootNode => (
+                  <TreeNode 
+                    key={rootNode.id} 
+                    node={rootNode} 
+                    checkedIds={checkedIds} 
+                    handleCheck={handleCheck} 
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
