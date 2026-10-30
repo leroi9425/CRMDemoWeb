@@ -67,7 +67,7 @@ public class PermissionService {
     // O(2n)
     public List<PermissionResponseDTO> getPermissionTree2(){
         System.out.println("Vẽ cây loại ko đệ quy");
-        List<Permission> allPermissions = permissionRepository.findAll();
+        List<Permission> allPermissions = permissionRepository.findAllByRoles_Name("USER");
         Map<Long, PermissionResponseDTO> permissionMap = new HashMap<>();
         List<PermissionResponseDTO> root = new ArrayList<>();
 
@@ -93,7 +93,11 @@ public class PermissionService {
     }
     public List<PermissionResponseDTO> getPermissionTreeByCategory(String category){
         System.out.println("Vẽ cây loại ko đệ quy");
-        List<Permission> allPermissions = permissionRepository.findAllByCategory(category);
+        List<Permission> allPermissions = permissionRepository.findAllByCategoryAndRoles_Name(category, "USER");
+
+        return drawPermissionTree(allPermissions);
+    }
+    public List<PermissionResponseDTO> drawPermissionTree(List<Permission> allPermissions){
         Map<Long, PermissionResponseDTO> permissionMap = new HashMap<>();
         List<PermissionResponseDTO> root = new ArrayList<>();
 

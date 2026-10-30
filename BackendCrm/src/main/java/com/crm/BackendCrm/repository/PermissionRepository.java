@@ -15,5 +15,6 @@ public interface PermissionRepository extends JpaRepository<Permission, Long> {
     @Query("SELECT DISTINCT p.category FROM Permission p WHERE p.category IS NOT NULL")
     List<String> findDistinctCategories();
     List<Permission> findAllByCategory(String category);
+    List<Permission> findAllByCategoryAndRoles_Name(String category, String roleName);
     List<Permission> findAllByRoles_Name(String name);
 }

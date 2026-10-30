@@ -74,13 +74,14 @@ public class UserService {
     }
 
     public boolean isAdmin(Long userId){
+        System.out.println("UserService: chuan bi xem co phai admin khong");
         User user = userRepository.findById(userId).
         orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "user not found"));
-
         Role role = roleRepository.findByUsers_Username(user.getUsername())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy role của user"));
 
-        if(role.getName() == "USER")
+        System.out.println("UserService: role.getName():"+role.getName());
+        if(role.getName().equals("ADMIN"))
             return true;
         else
             return false;

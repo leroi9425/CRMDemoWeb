@@ -6,6 +6,7 @@ import UserView from "./components/UserView";
 import SocialView from "./components/SocialView";
 import Login from "./components/Login";
 import ProductView from "./components/ProductView";
+import PackageView from "./components/PackageView";
 import { subscribeToPush } from "./services/pushNotification";
 
 import RoleManagerTab from "./components/RoleManagerTab";
@@ -117,6 +118,12 @@ function MainLayout() {
                   Mạng xã hội
                 </button>
               )}
+              <button 
+                onClick={() => setActiveTab("packages")}
+                className={`h-full border-b-2 font-medium text-sm transition-colors ${activeTab === 'packages' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+              >
+                Gói dịch vụ
+              </button>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -135,6 +142,7 @@ function MainLayout() {
       {activeTab === "users" && auth?.permissions?.includes("QUAN_LY_USER") && <UserView />}
       {activeTab == "companies" && auth?.permissions?.includes("QUAN_LY_CONG_TY") && <CompanyView />}
       {activeTab == "socials" && <SocialView />}
+      {activeTab === "packages" && <PackageView />}
     </div>
   );
 }

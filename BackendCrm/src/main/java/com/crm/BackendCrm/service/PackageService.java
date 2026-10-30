@@ -17,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.crm.BackendCrm.dto.Request.PackageRequestDTO;
+import com.crm.BackendCrm.dto.Response.PackageDetailResponseDto;
 import com.crm.BackendCrm.dto.Response.PackageResponseDTO;
+import com.crm.BackendCrm.dto.Response.PermissionResponseDTO;
 import com.crm.BackendCrm.entity.Package;
 import com.crm.BackendCrm.entity.Permission;
 import com.crm.BackendCrm.repository.PackageRepository;
@@ -31,11 +33,27 @@ import lombok.RequiredArgsConstructor;;
 public class PackageService {
     private final PackageRepository packageRepository;
     private final PermissionRepository permissionRepository;
+    private final PermissionService permissionService;
 
     public List<PackageResponseDTO> getAllPackage(){
         return packageRepository.findAll().stream().map(this::toDTO).collect(Collectors.toList());
     }
+    public PackageDetailResponseDto getDetailPackage(Long packageId){
+        Package p = packageRepository.findById(packageId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy gói với id:"+packageId));
 
+        List<Permission> packPermission = new ArrayList<>(p.getPermissions());
+        List<PermissionResponseDTO> tree = permissionService.drawPermissionTree(packPermission);
+
+        return new PackageDetailResponseDto(
+            p.getId(),
+            p.getPrice(),
+            p.getName(),
+            p.getDescription(),
+            p.getStatus(),
+            tree
+        );
+    }
     public PackageResponseDTO create(PackageRequestDTO pDto){
         if(isExitsPermissionNotForUser(pDto)){
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
