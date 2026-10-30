@@ -3,6 +3,7 @@ package com.crm.BackendCrm.controller;
 import com.crm.BackendCrm.dto.Request.AuthRequest;
 import com.crm.BackendCrm.dto.Response.AuthResponse;
 import com.crm.BackendCrm.entity.User;
+import com.crm.BackendCrm.repository.RoleRepository;
 import com.crm.BackendCrm.repository.UserRepository;
 import com.crm.BackendCrm.security.JwtUtils;
 import lombok.RequiredArgsConstructor;
@@ -33,12 +34,26 @@ public class AuthController {
     private final UserDetailsService userDetailsService;
     private final JwtUtils jwtUtils;
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
 //     private final com.crm.BackendCrm.security.ActiveSessionManager activeSessionManager;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(
             @RequestBody AuthRequest request
     ) {
+        try {
+        Role role = roleRepository.findByName("ADMIN").orElse(null);
+        if (role == null) {
+                System.out.println("Không tìm thấy role ADMIN");
+                return ResponseEntity.notFound().build();
+        }
+        System.out.println("So luong permission cua role: " + role.getPermissions().size());
+        } catch (Exception e) {
+            System.out.println("Lỗi khi thao tác với role:"+e);
+            
+            System.out.println("Lỗi khi thao tác với role + tin nhắn: "+e.getMessage());
+        }
+        
         System.out.println("Bắt đầu vào login");
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.username(), request.password())
@@ -46,13 +61,20 @@ public class AuthController {
         // Đăng ký user vào luồng chạy hiện tại
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(request.username());
+        //User detail là thằng sẵn có của java nó sẽ làm nhiệm vụ chứa các thông tin chi tiết của user, các biến boolean để 
+        // dễ kiểm tra acc có bị khóa hay con sử dụng đc k
+        // loadUserByUsername là hàm được BackendCrm/security/CustomUserDetailsService định nghĩa, ghi đè
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(request.username()); 
         final String jwt = jwtUtils.generateToken(userDetails);
         
+        // getAuthorities là hàm được entity User định nghĩa, ghi đè
         List<String> permissions = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
-        
+        System.out.println("Danh sách quyền:"+permissions);
+        for (String p : permissions){
+            System.out.println("Quyền: " + p);
+        }
         User user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 

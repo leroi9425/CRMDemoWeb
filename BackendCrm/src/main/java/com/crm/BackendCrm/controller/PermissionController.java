@@ -33,6 +33,7 @@ public class PermissionController {
     }
     @GetMapping("/tree/column")
     public ResponseEntity<List<ColumnPermissionResponseDTO>> getTreeColumn() {
+        System.out.println("PermissionController: chuẩn bị tạo cây");
         List<ColumnPermissionResponseDTO> tree = permissionService.getColumnPermissionTree();
         return ResponseEntity.ok(tree);
     }
@@ -40,6 +41,7 @@ public class PermissionController {
     // API 2: Thêm quyền mới
     @PostMapping("/create")
     public ResponseEntity<?> createPermission(@Valid @RequestBody PermissionRequestDTO requestDTO) {
+        System.out.println("PermissionController: chuẩn bị thêm quyền mới");
         permissionService.createPermission(requestDTO);
         return ResponseEntity.ok("Thêm mới quyền thành công!");
     }

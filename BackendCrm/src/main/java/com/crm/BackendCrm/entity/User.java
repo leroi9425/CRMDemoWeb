@@ -43,12 +43,12 @@ public class User implements UserDetails {
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
-    private Set<Role> roles = new HashSet<>();
+    private Set<Role> roles = new HashSet<>();    
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id", nullable = false)
-    private Company company;
     
+    private Company company;
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // Tạo một cái giỏ trống để đựng quyền
@@ -57,7 +57,9 @@ public class User implements UserDetails {
         // Vòng lặp 1: Đi qua từng Nhóm quyền (Role) của User (Ví dụ: Kế toán, Marketing)
         for (Role role : roles) {
             // Vòng lặp 2: Đi qua từng Quyền chi tiết (Permission) nằm trong Nhóm quyền đó
+            System.out.println("Vai trò:"+role);
             for (Permission permission : role.getPermissions()) {
+                System.out.println("Quyền:"+permission);
                 // Nhặt cái tên quyền (Ví dụ "XEM_KH") bỏ vào giỏ
                 authorities.add(new SimpleGrantedAuthority(permission.getName()));
             }

@@ -41,6 +41,7 @@ public class PackageController {
     }
     @PostMapping("")
     public PackageResponseDTO createPack(@Valid @RequestBody PackageRequestDTO pDto) {
+        System.out.println("PackageController: chuẩn bị thêm quyền mới");
         return packageService.create(pDto);
     }
     
