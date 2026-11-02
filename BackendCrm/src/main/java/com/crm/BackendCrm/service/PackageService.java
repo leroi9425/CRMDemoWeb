@@ -24,7 +24,6 @@ import com.crm.BackendCrm.entity.Package;
 import com.crm.BackendCrm.entity.Permission;
 import com.crm.BackendCrm.repository.PackageRepository;
 import com.crm.BackendCrm.repository.PermissionRepository;
-import com.rabbitmq.client.RpcClient.Response;
 
 import lombok.RequiredArgsConstructor;;
 

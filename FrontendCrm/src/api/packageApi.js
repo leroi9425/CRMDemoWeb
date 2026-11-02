@@ -14,3 +14,5 @@ export const updatePackage = (id, data) => axiosInstance.put(`/packages/${id}`, 
 
 // Xóa gói (DELETE /api/packages/{id})
 export const deletePackage = (id) => axiosInstance.delete(`/packages/${id}`);
+
+export const requestCreate = () => axiosInstance.get('packages/request/create');

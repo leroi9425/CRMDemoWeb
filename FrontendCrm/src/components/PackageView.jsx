@@ -1,11 +1,25 @@
 import { useState, useEffect } from "react";
-import { getPackages } from "../api/packageApi";
+import { getPackages, createPackage, requestCreate } from "../api/packageApi";
+import TreeNode from "./Permission/TreeNode";
 
 export default function PackageView() {
+    const [currentView, setCurrentView] = useState("LIST"); // "LIST" | "CREATE"
     const [packages, setPackages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
+
+    // State cho màn hình Tạo gói
+    const [formData, setFormData] = useState({
+        name: "",
+        price: "",
+        description: "",
+        status: true,
+    });
+    const [treeData, setTreeData] = useState([]);
+    const [checkedIds, setCheckedIds] = useState([]);
+    const [loadingTree, setLoadingTree] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
 
     // Gọi API lấy toàn bộ danh sách gói
     const fetchPackages = async () => {
@@ -27,11 +41,110 @@ export default function PackageView() {
 
     // Format tiền tệ Việt Nam (VNĐ)
     const formatPrice = (price) => {
-        if (price === undefined || price === null) return "0 ₫";
+        if (price === undefined || price === null || price === "") return "0 ₫";
+        const num = Number(price);
+        if (isNaN(num)) return "0 ₫";
         return new Intl.NumberFormat("vi-VN", {
             style: "currency",
             currency: "VND",
-        }).format(price);
+        }).format(num);
+    };
+
+    // Mở màn hình tạo gói & Gọi API cây quyền /api/permissions/tree/column
+    const handleOpenCreate = async () => {
+        setFormData({
+            name: "",
+            price: "",
+            description: "",
+            status: true,
+        });
+        setCheckedIds([]);
+        setCurrentView("CREATE");
+        setLoadingTree(true);
+
+        try {
+            const res = await requestCreate();
+            console.log("Xác nhận có quyền thêm quyền, tải về cây quyền:", res.data);
+            setTreeData(res.data || []);
+        } catch (error) {
+            console.error("Lỗi khi tải cây quyền:", error);
+            alert("Lỗi khi tải cây quyền: " + (error.response?.data?.message || error.message));
+        } finally {
+            setLoadingTree(false);
+        }
+    };
+
+    // Đệ quy lấy tất cả ID của node và con cháu
+    const getAllIds = (node, ids = []) => {
+        ids.push(node.id);
+        if (node.children) {
+            node.children.forEach((child) => getAllIds(child, ids));
+        }
+        return ids;
+    };
+
+    // Xử lý chọn/bỏ chọn node trên cây quyền
+    const handleCheck = (node, isChecked) => {
+        const familyIds = getAllIds(node);
+        setCheckedIds((prev) => {
+            if (isChecked) {
+                return Array.from(new Set([...prev, ...familyIds]));
+            } else {
+                return prev.filter((id) => !familyIds.includes(id));
+            }
+        });
+    };
+
+    // Chọn tất cả quyền
+    const handleSelectAll = () => {
+        const allIds = [];
+        treeData.forEach((col) => {
+            col.listPermission?.forEach((rootNode) => {
+                getAllIds(rootNode, allIds);
+            });
+        });
+        setCheckedIds(Array.from(new Set(allIds)));
+    };
+
+    // Bỏ chọn tất cả quyền
+    const handleDeselectAll = () => {
+        setCheckedIds([]);
+    };
+
+    // Xử lý lưu / tạo gói
+    const handleCreatePackage = async (e) => {
+        if (e) e.preventDefault();
+
+        if (!formData.name.trim()) {
+            alert("Vui lòng nhập tên gói dịch vụ!");
+            return;
+        }
+
+        if (formData.price === "" || formData.price === null) {
+            alert("Vui lòng nhập giá bán của gói!");
+            return;
+        }
+
+        const payload = {
+            name: formData.name.trim(),
+            price: Number(formData.price),
+            description: formData.description.trim(),
+            status: Boolean(formData.status),
+            listPermissionId: checkedIds,
+        };
+
+        setSubmitting(true);
+        try {
+            await createPackage(payload);
+            alert("Tạo gói dịch vụ thành công!");
+            setCurrentView("LIST");
+            fetchPackages();
+        } catch (error) {
+            console.error("Lỗi khi tạo gói:", error);
+            alert("Có lỗi xảy ra khi tạo gói: " + (error.response?.data?.message || error.message));
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     // Lọc theo tìm kiếm và trạng thái
@@ -49,6 +162,258 @@ export default function PackageView() {
         return matchesSearch && matchesStatus;
     });
 
+    // =========================================================================
+    // MÀN HÌNH 2: TẠO GÓI MỚI (FORM + CÂY QUYỀN)
+    // =========================================================================
+    if (currentView === "CREATE") {
+        return (
+            <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+                {/* Header thanh điều hướng & nút hành động */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <div className="flex items-center space-x-2 text-sm text-slate-500 mb-1">
+                            <button
+                                type="button"
+                                onClick={() => setCurrentView("LIST")}
+                                className="hover:text-blue-600 transition-colors cursor-pointer flex items-center"
+                            >
+                                <i className="fa-solid fa-arrow-left mr-1.5 text-xs"></i>
+                                Gói dịch vụ
+                            </button>
+                            <span>/</span>
+                            <span className="text-slate-800 font-medium">Thêm mới</span>
+                        </div>
+                        <h1 className="text-2xl font-bold text-slate-900">Tạo Gói Dịch Vụ Mới</h1>
+                        <p className="text-sm text-slate-500 mt-0.5">
+                            Thiết lập thông tin tên gói, giá bán và phân bổ cây quyền tính năng
+                        </p>
+                    </div>
+
+                    <div className="flex items-center space-x-3">
+                        <button
+                            type="button"
+                            onClick={() => setCurrentView("LIST")}
+                            disabled={submitting}
+                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm rounded-xl transition-colors cursor-pointer"
+                        >
+                            <i className="fa-solid fa-xmark mr-1.5"></i>
+                            Trở về
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleCreatePackage}
+                            disabled={submitting}
+                            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl shadow-sm hover:shadow transition-all cursor-pointer flex items-center"
+                        >
+                            {submitting ? (
+                                <>
+                                    <i className="fa-solid fa-circle-notch fa-spin mr-2"></i>
+                                    Đang lưu...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fa-solid fa-check mr-2"></i>
+                                    Lưu gói dịch vụ
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+
+                <form onSubmit={handleCreatePackage} className="space-y-6">
+                    {/* KHỐI 1: THÔNG TIN CƠ BẢN CỦA GÓI */}
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-5">
+                            <div className="flex items-center space-x-2">
+                                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm">
+                                    <i className="fa-solid fa-circle-info"></i>
+                                </div>
+                                <h3 className="text-base font-semibold text-slate-800">
+                                    Thông tin gói dịch vụ
+                                </h3>
+                            </div>
+                            <span className="text-xs text-slate-400">
+                                Các trường có dấu <span className="text-rose-500">*</span> là bắt buộc
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Tên gói */}
+                            <div className="space-y-1.5">
+                                <label className="block text-sm font-semibold text-slate-700">
+                                    Tên gói <span className="text-rose-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={formData.name}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, name: e.target.value })
+                                    }
+                                    placeholder="Ví dụ: Gói CRM Doanh Nghiệp Pro"
+                                    className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                />
+                            </div>
+
+                            {/* Giá bán */}
+                            <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-sm font-semibold text-slate-700">
+                                        Giá bán (VNĐ) <span className="text-rose-500">*</span>
+                                    </label>
+                                    <span className="text-xs font-semibold text-blue-600">
+                                        Xem trước: {formatPrice(formData.price)}
+                                    </span>
+                                </div>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="1000"
+                                        required
+                                        value={formData.price}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, price: e.target.value })
+                                        }
+                                        placeholder="Ví dụ: 5000000"
+                                        className="w-full pl-3.5 pr-12 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    />
+                                    <span className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-xs font-medium text-slate-400 pointer-events-none">
+                                        VNĐ
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Mô tả */}
+                            <div className="md:col-span-2 space-y-1.5">
+                                <label className="block text-sm font-semibold text-slate-700">
+                                    Mô tả gói
+                                </label>
+                                <textarea
+                                    rows="3"
+                                    value={formData.description}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, description: e.target.value })
+                                    }
+                                    placeholder="Mô tả quyền lợi, đối tượng khách hàng hoặc các tính năng nổi bật của gói cước này..."
+                                    className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-y"
+                                />
+                            </div>
+
+                            {/* Trạng thái kích hoạt */}
+                            <div className="md:col-span-2 flex items-center space-x-3 pt-1">
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.status}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, status: e.target.checked })
+                                        }
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    <span className="ml-3 text-sm font-medium text-slate-700">
+                                        Kích hoạt mở bán ngay khi tạo
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* KHỐI 2: CÂY QUYỀN SỬ DỤNG TreeNode THEO ĐÚNG MẪU YÊU CẦU */}
+                    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-2 mb-4 gap-2">
+                            <div className="flex items-center space-x-2">
+                                <h3 className="text-lg font-semibold text-slate-800">Chọn quyền</h3>
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                                    Đã chọn: {checkedIds.length} quyền
+                                </span>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                                <button
+                                    type="button"
+                                    onClick={handleSelectAll}
+                                    className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                                >
+                                    <i className="fa-solid fa-check-double mr-1 text-blue-600"></i>
+                                    Chọn tất cả
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleDeselectAll}
+                                    className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                                >
+                                    <i className="fa-solid fa-rotate-left mr-1 text-slate-500"></i>
+                                    Bỏ chọn
+                                </button>
+                            </div>
+                        </div>
+
+                        {loadingTree ? (
+                            <div className="min-h-[400px] flex flex-col items-center justify-center text-slate-400">
+                                <i className="fa-solid fa-circle-notch fa-spin text-3xl text-blue-600 mb-3"></i>
+                                <p className="text-sm">Đang tải cây quyền hệ thống...</p>
+                            </div>
+                        ) : (
+                            <div className="bg-slate-50 p-6 rounded border border-slate-200 min-h-[400px] overflow-x-auto">
+                                <div className="flex justify-center flex-wrap gap-12 items-start min-w-max mx-auto">
+                                    {treeData.map((colData, colIndex) => (
+                                        <div
+                                            key={colData.column ?? colIndex}
+                                            className="space-y-4 min-w-[260px]"
+                                        >
+                                            {colData.listPermission?.map((rootNode) => (
+                                                <TreeNode
+                                                    key={rootNode.id}
+                                                    node={rootNode}
+                                                    checkedIds={checkedIds}
+                                                    handleCheck={handleCheck}
+                                                />
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* NÚT THAO TÁC CUỐI TRANG */}
+                    <div className="flex items-center justify-end space-x-3 pt-2 pb-6">
+                        <button
+                            type="button"
+                            onClick={() => setCurrentView("LIST")}
+                            disabled={submitting}
+                            className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm rounded-xl transition-colors cursor-pointer"
+                        >
+                            Hủy bỏ
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={submitting}
+                            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl shadow-sm hover:shadow transition-all cursor-pointer flex items-center"
+                        >
+                            {submitting ? (
+                                <>
+                                    <i className="fa-solid fa-circle-notch fa-spin mr-2"></i>
+                                    Đang lưu gói...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fa-solid fa-check mr-2"></i>
+                                    Hoàn tất tạo gói
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </form>
+            </main>
+        );
+    }
+
+    // =========================================================================
+    // MÀN HÌNH 1: DANH SÁCH GÓI DẠNG LƯỚI (GRID CARDS)
+    // =========================================================================
     return (
         <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
             {/* Header: Tiêu đề + Thống kê + Nút Thêm */}
@@ -67,10 +432,11 @@ export default function PackageView() {
                     </div>
                 </div>
 
-                {/* Nút Thêm mới - Vẽ giao diện, không bắt sự kiện */}
+                {/* Nút Thêm mới - Nhấn vào sẽ chuyển sang giao diện tạo gói */}
                 <div className="flex items-center space-x-3">
                     <button
                         type="button"
+                        onClick={handleOpenCreate}
                         className="inline-flex items-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl shadow-sm hover:shadow transition-all duration-200 cursor-pointer"
                     >
                         <i className="fa-solid fa-plus mr-2 text-xs"></i>
@@ -102,7 +468,7 @@ export default function PackageView() {
                         <button
                             type="button"
                             onClick={() => setStatusFilter("all")}
-                            className={`px-3 py-1.5 rounded-lg transition-all ${
+                            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                                 statusFilter === "all"
                                     ? "bg-white text-slate-800 shadow-sm font-semibold"
                                     : "text-slate-500 hover:text-slate-800"
@@ -113,7 +479,7 @@ export default function PackageView() {
                         <button
                             type="button"
                             onClick={() => setStatusFilter("active")}
-                            className={`px-3 py-1.5 rounded-lg transition-all ${
+                            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                                 statusFilter === "active"
                                     ? "bg-white text-emerald-700 shadow-sm font-semibold"
                                     : "text-slate-500 hover:text-slate-800"
@@ -124,7 +490,7 @@ export default function PackageView() {
                         <button
                             type="button"
                             onClick={() => setStatusFilter("inactive")}
-                            className={`px-3 py-1.5 rounded-lg transition-all ${
+                            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                                 statusFilter === "inactive"
                                     ? "bg-white text-rose-700 shadow-sm font-semibold"
                                     : "text-slate-500 hover:text-slate-800"
@@ -160,6 +526,7 @@ export default function PackageView() {
                     </p>
                     <button
                         type="button"
+                        onClick={handleOpenCreate}
                         className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium text-sm rounded-xl transition-colors cursor-pointer"
                     >
                         <i className="fa-solid fa-plus mr-2 text-xs"></i>
@@ -183,6 +550,9 @@ export default function PackageView() {
                                         <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-500 to-indigo-500 text-white flex items-center justify-center shadow-sm">
                                             <i className="fa-solid fa-crown text-sm"></i>
                                         </div>
+                                        <span className="text-xs font-mono font-medium text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md">
+                                            ID #{pkg.id}
+                                        </span>
                                     </div>
 
                                     {/* Trạng thái gói */}
@@ -244,9 +614,8 @@ export default function PackageView() {
                                     </div>
                                 </div>
 
-                                {/* Card Footer: Action buttons (Xóa, Sửa) - Vẽ ra nhưng không bắt sự kiện */}
+                                {/* Card Footer: Action buttons (Xóa, Sửa) - Nút vẽ ra nhưng để nguyên */}
                                 <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
-                                    {/* Nút Xóa - Vẽ ra nhưng không bắt sự kiện */}
                                     <button
                                         type="button"
                                         className="flex-1 inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer border border-rose-200/60"
@@ -256,7 +625,6 @@ export default function PackageView() {
                                         <span>Xóa</span>
                                     </button>
 
-                                    {/* Nút Sửa - Vẽ ra nhưng không bắt sự kiện */}
                                     <button
                                         type="button"
                                         className="flex-1 inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer border border-blue-200/60"

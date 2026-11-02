@@ -50,14 +50,15 @@ public class PermissionService {
                 children
         );
     }
-    public List<ColumnPermissionResponseDTO> getColumnPermissionTree(){
+    // vẽ cây theo cột
+    public List<ColumnPermissionResponseDTO> getColumnUserPermissionTree(){
         int numCategory = permissionRepository.countDistinctCategories();
         List<String> listCategory = permissionRepository.findDistinctCategories();
 
         List<ColumnPermissionResponseDTO> result = new ArrayList<>();
 
         for (int i=0 ; i<numCategory ; i++){
-            List<PermissionResponseDTO> column = getPermissionTreeByCategory(listCategory.get(i));
+            List<PermissionResponseDTO> column = getUserPermissionTreeByCategory(listCategory.get(i));
             ColumnPermissionResponseDTO cpDto = new ColumnPermissionResponseDTO(i, column);
             result.add(cpDto);
         }
@@ -91,7 +92,7 @@ public class PermissionService {
 
         return root;
     }
-    public List<PermissionResponseDTO> getPermissionTreeByCategory(String category){
+    public List<PermissionResponseDTO> getUserPermissionTreeByCategory(String category){
         System.out.println("Vẽ cây loại ko đệ quy");
         List<Permission> allPermissions = permissionRepository.findAllByCategoryAndRoles_Name(category, "USER");
 

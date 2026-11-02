@@ -31,6 +31,26 @@ function MainLayout() {
     // Chỉ kết nối khi đã có auth.username
     if (!auth || !auth.username) return;
     
+    switch (auth.permissions[0]) {
+        case "QUAN_LY_KHACH_HANG":
+            setActiveTab("customers");
+            break;
+        case "QUAN_LY_SAN_PHAM":
+            setActiveTab("products");
+            break;
+        case "QUAN_LY_QUYEN":
+            setActiveTab("roles");
+            break;
+        case "QUAN_LY_USER":
+            setActiveTab("users");
+            break;
+        case "QUAN_LY_CONG_TY":
+            setActiveTab("companies");
+            break;
+        default:
+            setActiveTab("socials");
+    } 
+    
     const client = connectWebSocket(
         auth.username,
         (notification) => {

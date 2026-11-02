@@ -34,7 +34,7 @@ public class PermissionController {
     @GetMapping("/tree/column")
     public ResponseEntity<List<ColumnPermissionResponseDTO>> getTreeColumn() {
         System.out.println("PermissionController: chuẩn bị tạo cây");
-        List<ColumnPermissionResponseDTO> tree = permissionService.getColumnPermissionTree();
+        List<ColumnPermissionResponseDTO> tree = permissionService.getColumnUserPermissionTree();
         return ResponseEntity.ok(tree);
     }
 
