@@ -52,7 +52,10 @@ public class Package {
     @JoinTable(
         name = "package_permissions",
         joinColumns = @JoinColumn(name = "package_id"),
-        inverseJoinColumns = @JoinColumn(name = "permission_id")
+        inverseJoinColumns = @JoinColumn(
+            name = "permission_name",
+            referencedColumnName = "name"
+        )
     )
     private Set<Permission> permissions = new HashSet<>();
 }

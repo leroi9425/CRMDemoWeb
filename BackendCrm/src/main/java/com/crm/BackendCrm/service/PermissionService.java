@@ -32,14 +32,14 @@ public class PermissionService {
         List<Permission> allPermissions = permissionRepository.findAllByRoles_Name("USER");
 
         return allPermissions.stream()
-                .filter(p -> p.getParentId() == null) 
+                .filter(p -> p.getParentName() == null) 
                 .map(root -> buildTree(root, allPermissions)) 
                 .collect(Collectors.toList());
     }
 
     private PermissionResponseDTO buildTree(Permission parent, List<Permission> allPermissions) {
         List<PermissionResponseDTO> children = allPermissions.stream()
-                .filter(p -> parent.getId().equals(p.getParentId()))
+                .filter(p -> parent.getName().equals(p.getParentName()))
                 .map(child -> buildTree(child, allPermissions))
                 .collect(Collectors.toList());
 
@@ -51,14 +51,16 @@ public class PermissionService {
         );
     }
     // vẽ cây theo cột
-    public List<ColumnPermissionResponseDTO> getColumnUserPermissionTree(){
+    // cài list vào đoạn này, hàm sau chỉ cần gọi list
+    public List<ColumnPermissionResponseDTO> getColumnUserPermissionTree(String roleName){
         int numCategory = permissionRepository.countDistinctCategories();
+        // nên sửa thành tìm category thuộc role user
         List<String> listCategory = permissionRepository.findDistinctCategories();
 
         List<ColumnPermissionResponseDTO> result = new ArrayList<>();
 
         for (int i=0 ; i<numCategory ; i++){
-            List<PermissionResponseDTO> column = getUserPermissionTreeByCategory(listCategory.get(i));
+            List<PermissionResponseDTO> column = getUserPermissionTreeByCategory(listCategory.get(i), roleName);
             ColumnPermissionResponseDTO cpDto = new ColumnPermissionResponseDTO(i, column);
             result.add(cpDto);
         }
@@ -66,55 +68,59 @@ public class PermissionService {
         return result;
     }
     // O(2n)
-    public List<PermissionResponseDTO> getPermissionTree2(){
+    // public List<PermissionResponseDTO> getPermissionTree2(){
+    //     System.out.println("Vẽ cây loại ko đệ quy");
+    //     List<Permission> allPermissions = permissionRepository.findAllByRoles_Name("USER");
+    //     Map<Long, PermissionResponseDTO> permissionMap = new HashMap<>();
+    //     List<PermissionResponseDTO> root = new ArrayList<>();
+
+    //     for (Permission permission : allPermissions){
+    //         PermissionResponseDTO pDTO = toDTO(permission);
+    //         permissionMap.put(permission.getId(), pDTO);
+    //     }
+
+    //     for (Permission permission : allPermissions){
+    //         PermissionResponseDTO p = permissionMap.get(permission.getId());
+
+    //         if (permission.getParentId() == null){
+    //             root.add(p);
+    //         }
+    //         else {
+    //             PermissionResponseDTO parent = permissionMap.get(permission.getParentId());
+    //             if (parent != null)
+    //                 parent.children().add(p);
+    //         }
+    //     }
+
+    //     return root;
+    // }
+    public List<PermissionResponseDTO> getUserPermissionTreeByCategory(String category, String roleName){
         System.out.println("Vẽ cây loại ko đệ quy");
-        List<Permission> allPermissions = permissionRepository.findAllByRoles_Name("USER");
-        Map<Long, PermissionResponseDTO> permissionMap = new HashMap<>();
-        List<PermissionResponseDTO> root = new ArrayList<>();
-
-        for (Permission permission : allPermissions){
-            PermissionResponseDTO pDTO = toDTO(permission);
-            permissionMap.put(permission.getId(), pDTO);
+        List<Permission> allPermissions = permissionRepository.findAllByCategoryAndRoles_Name(category, roleName);
+        for (Permission p : allPermissions){
+            System.out.println("PermissionService: getUserPermissionTreeByCategory: "+p.getName());
         }
-
-        for (Permission permission : allPermissions){
-            PermissionResponseDTO p = permissionMap.get(permission.getId());
-
-            if (permission.getParentId() == null){
-                root.add(p);
-            }
-            else {
-                PermissionResponseDTO parent = permissionMap.get(permission.getParentId());
-                if (parent != null)
-                    parent.children().add(p);
-            }
-        }
-
-        return root;
-    }
-    public List<PermissionResponseDTO> getUserPermissionTreeByCategory(String category){
-        System.out.println("Vẽ cây loại ko đệ quy");
-        List<Permission> allPermissions = permissionRepository.findAllByCategoryAndRoles_Name(category, "USER");
-
         return drawPermissionTree(allPermissions);
     }
     public List<PermissionResponseDTO> drawPermissionTree(List<Permission> allPermissions){
-        Map<Long, PermissionResponseDTO> permissionMap = new HashMap<>();
+        Map<String, PermissionResponseDTO> permissionMap = new HashMap<>();
         List<PermissionResponseDTO> root = new ArrayList<>();
 
         for (Permission permission : allPermissions){
             PermissionResponseDTO pDTO = toDTO(permission);
-            permissionMap.put(permission.getId(), pDTO);
+            permissionMap.put(permission.getName(), pDTO); // key = parentName, value = permissionDTO
         }
 
         for (Permission permission : allPermissions){
-            PermissionResponseDTO p = permissionMap.get(permission.getId());
+            PermissionResponseDTO p = permissionMap.get(permission.getName());
 
-            if (permission.getParentId() == null){
+            if (permission.getParentName() == null){
+                System.out.println("PermissionService: phát hiện node cha: "+p.name());
                 root.add(p);
             }
             else {
-                PermissionResponseDTO parent = permissionMap.get(permission.getParentId());
+                PermissionResponseDTO parent = permissionMap.get(permission.getParentName());
+                System.out.println("PermissionService: phát hiện node con: "+p.name()+" có cha là: "+parent.name());
                 if (parent != null)
                     parent.children().add(p);
             }
@@ -132,9 +138,9 @@ public class PermissionService {
     @CacheEvict(value = "permissionTree", allEntries = true)
     public Permission createPermission(PermissionRequestDTO dto) {
         Permission permission = new Permission();
-        permission.setName(dto.name());
+        permission.setName(dto.parentName());
         permission.setDescription(dto.description());
-        permission.setParentId(dto.parentId());
+        permission.setParentName(dto.parentName());
         return permissionRepository.save(permission);
     }
 

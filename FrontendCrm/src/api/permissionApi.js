@@ -1,4 +1,4 @@
 import axiosInstance from "./axiosInstance";
 
-export const getPermissionTree = () => axiosInstance.get("/permission/tree");
-export const getPermissionTreeColumn = () => axiosInstance.get("/permissions/tree/column");
+export const getPermissionTreeUserColumn = () => axiosInstance.get("/permissions/tree/user/column");
+export const getPermissionTreeAdminColumn = () => axiosInstance.get("/permissions/tree/admin/column");

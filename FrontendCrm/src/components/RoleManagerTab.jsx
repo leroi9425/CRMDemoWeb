@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../api/axiosInstance';
 import { getRoles, getRolePermission, putRoles, postRoles, postRolePermission } from '../api/roleApi';
-import { getPermissionTree } from '../api/permissionApi';
+import { getPermissionTreeAdminColumn, getPermissionTreeUserColumn } from '../api/permissionApi';
 import TreeNode from './Permission/TreeNode'
 
 // =========================================================================
@@ -97,7 +97,7 @@ const RoleEdit = ({ currentRole, onBack }) => {
   const fetchTreeAndPermissions = async () => {
     setLoading(true);
     try {
-      const treeRes = await axiosInstance.get('/permissions/tree/column');
+      const treeRes = await getPermissionTreeUserColumn();
       setTreeData(treeRes.data);
 
       if (isEditing) {

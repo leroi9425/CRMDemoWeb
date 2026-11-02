@@ -591,7 +591,7 @@ export default function PackageView() {
                                             {formatPrice(pkg.price)}
                                         </span>
                                         <span className="text-xs text-slate-400 font-normal">
-                                            / chu kỳ
+                                            / Tháng
                                         </span>
                                     </div>
 

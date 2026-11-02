@@ -24,8 +24,8 @@ public class Permission {
     @Column
     private String description;
 
-    @Column(nullable = true)    
-    private Long parentId;
+    @Column (nullable = true)
+    private String parentName;
 
     @Column(nullable = false)
     private String type; // đánh dấu đâu là quyền đâu là tên đâu là module

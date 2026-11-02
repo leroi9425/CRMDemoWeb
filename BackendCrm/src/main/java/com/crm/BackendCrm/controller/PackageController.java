@@ -41,10 +41,10 @@ public class PackageController {
     @GetMapping()
     public List<PackageResponseDTO> getAllPackage(@RequestHeader("Authorization") String header) {
         System.out.println("PackageController: chuẩn bị xem quyền");
-        Long userId = getUserIdByAuth(header);
-        if(!userService.isAdmin(userId)){
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "bạn không có quyền thực hiện lệnh này");
-        }
+        // Long userId = getUserIdByAuth(header);
+        // if(!userService.isAdmin(userId)){
+        //     throw new ResponseStatusException(HttpStatus.FORBIDDEN, "bạn không có quyền thực hiện lệnh này");
+        // }
         return packageService.getAllPackage();
     }
     @GetMapping("/request/create")
@@ -54,7 +54,7 @@ public class PackageController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "bạn không có quyền thực hiện lệnh này");
         }
         System.out.println("PackageController: chuẩn bị tạo cây");
-        List<ColumnPermissionResponseDTO> tree = permissionService.getColumnUserPermissionTree();
+        List<ColumnPermissionResponseDTO> tree = permissionService.getColumnUserPermissionTree("USER");
         return ResponseEntity.ok(tree);
     }
     @GetMapping("/{id}")

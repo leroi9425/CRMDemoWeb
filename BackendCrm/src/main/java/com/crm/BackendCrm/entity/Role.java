@@ -7,6 +7,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "roles")
+// @Data
 @Getter 
 @Setter 
 @NoArgsConstructor
@@ -26,7 +27,10 @@ public class Role {
     @JoinTable(
         name = "permission_role",
         joinColumns = @JoinColumn(name = "role_id"),
-        inverseJoinColumns = @JoinColumn(name = "permission_id")
+        inverseJoinColumns = @JoinColumn(
+            name = "permission_name",
+            referencedColumnName = "name"
+        )
     )
     private Set<Permission> permissions = new HashSet<>();
 

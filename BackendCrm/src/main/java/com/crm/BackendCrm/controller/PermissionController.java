@@ -26,17 +26,24 @@ public class PermissionController {
     private final PermissionService permissionService;
 
     // API 1: Trả về JSON cây quyền cho Frontend
-    @GetMapping("/tree")
-    public ResponseEntity<List<PermissionResponseDTO>> getTree() {
-        List<PermissionResponseDTO> tree = permissionService.getPermissionTree2();
+    // @GetMapping("/tree")
+    // public ResponseEntity<List<PermissionResponseDTO>> getTree() {
+    //     List<PermissionResponseDTO> tree = permissionService.getPermissionTree2();
+    //     return ResponseEntity.ok(tree);
+    // }
+    @GetMapping("/tree/user/column")
+    public ResponseEntity<List<ColumnPermissionResponseDTO>> getTreeUserColumn() {
+        System.out.println("PermissionController: chuẩn bị tạo cây cho usser");
+        List<ColumnPermissionResponseDTO> tree = permissionService.getColumnUserPermissionTree("USER");
         return ResponseEntity.ok(tree);
     }
-    @GetMapping("/tree/column")
-    public ResponseEntity<List<ColumnPermissionResponseDTO>> getTreeColumn() {
-        System.out.println("PermissionController: chuẩn bị tạo cây");
-        List<ColumnPermissionResponseDTO> tree = permissionService.getColumnUserPermissionTree();
+    @GetMapping("/tree/admin/column")
+    public ResponseEntity<List<ColumnPermissionResponseDTO>> getTreeAdminColumn() {
+        System.out.println("PermissionController: chuẩn bị tạo cây cho admin");
+        List<ColumnPermissionResponseDTO> tree = permissionService.getColumnUserPermissionTree("ADMIN");
         return ResponseEntity.ok(tree);
     }
+
 
     // API 2: Thêm quyền mới
     @PostMapping("/create")
