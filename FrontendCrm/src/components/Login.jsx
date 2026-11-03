@@ -20,7 +20,7 @@ export default function Login() {
         try {
             console.log("bắt đầu gửi lệnh submit login với user pass: " + username + password);
             const res = await login({ username, password });  // đợi dữ liệu đổ vào res
-            storeData({                                       // hàm lưu vào local storage
+            storeData({                                      // hàm lưu vào local storage
                 token: res.data.token,
                 username: res.data.username,
                 role: res.data.role,

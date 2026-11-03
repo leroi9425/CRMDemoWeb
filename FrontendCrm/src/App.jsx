@@ -14,7 +14,7 @@ import CompanyView from "./components/CompanyView";
 import { connectWebSocket } from "./services/websocket";
 
 function MainLayout() {
-  const [activeTab, setActiveTab] = useState("customers");
+  const [activeTab, setActiveTab] = useState();
   const { auth, logoutUser } = useAuth();
   const [toastMessage, setToastMessage] = useState(null);
 

@@ -34,13 +34,13 @@ public class PermissionController {
     @GetMapping("/tree/user/column")
     public ResponseEntity<List<ColumnPermissionResponseDTO>> getTreeUserColumn() {
         System.out.println("PermissionController: chuẩn bị tạo cây cho usser");
-        List<ColumnPermissionResponseDTO> tree = permissionService.getColumnUserPermissionTree("USER");
+        List<ColumnPermissionResponseDTO> tree = permissionService.getColumnPermissionTree("USER");
         return ResponseEntity.ok(tree);
     }
     @GetMapping("/tree/admin/column")
     public ResponseEntity<List<ColumnPermissionResponseDTO>> getTreeAdminColumn() {
         System.out.println("PermissionController: chuẩn bị tạo cây cho admin");
-        List<ColumnPermissionResponseDTO> tree = permissionService.getColumnUserPermissionTree("ADMIN");
+        List<ColumnPermissionResponseDTO> tree = permissionService.getColumnPermissionTree("ADMIN");
         return ResponseEntity.ok(tree);
     }
 

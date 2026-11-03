@@ -1,6 +1,5 @@
 package com.crm.BackendCrm.service;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,10 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.bouncycastle.crypto.util.Pack;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -60,10 +56,10 @@ public class PackageService {
 
         if (isExitsPackage(pDto)){
            throw new ResponseStatusException(HttpStatus.CONFLICT);
-        }           
+        }
         
         // 4.1.3.12
-        // nên viết procedure hay là code  ?
+        // nên viết procedure hay là code ?
         // thử code trước
         List<Permission> permissions = permissionRepository.findAllById(pDto.listPermissionId());
         Package newPack = new Package();
@@ -120,7 +116,7 @@ public class PackageService {
         return mapPackagePermission;
     }
 
-    private PackageResponseDTO toDTO(Package p){
+    private PackageResponseDTO toDTO(Package p) {
         return new PackageResponseDTO(
             p.getId(),
             p.getPrice(),

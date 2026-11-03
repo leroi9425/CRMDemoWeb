@@ -7,6 +7,7 @@ public record PermissionResponseDTO(
     Long id,
     String name,
     String description,
+    Boolean isChecked,
     
     // Cái túi này sẽ chứa các quyền con lồng vào bên trong để trả về cho Giao diện vẽ Cây
     List<PermissionResponseDTO> children 
