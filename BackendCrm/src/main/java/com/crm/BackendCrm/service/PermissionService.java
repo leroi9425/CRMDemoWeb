@@ -9,7 +9,7 @@ import com.crm.BackendCrm.dto.Response.ColumnPermissionResponseDTO;
 import com.crm.BackendCrm.dto.Response.PermissionResponseDTO;
 
 // Thư viện Cache của Spring Boot
-import org.springframework.cache.annotation.Cacheable;
+// import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
 
 import java.util.ArrayList;
@@ -27,29 +27,46 @@ public class PermissionService {
     // Lần đầu tiên gọi API, nó chọc DB tính toán Cây, rồi cất kết quả vào Két sắt "permissionTree" trên Redis.
     // Lần thứ 2 trở đi, nó thọc tay vào Redis bốc ra luôn, code dưới này không bị chạy nữa!
     // O(n^2)
-    @Cacheable(value = "permissionTree")
-    public List<PermissionResponseDTO> getPermissionTree() {
-        List<Permission> allPermissions = permissionRepository.findAllByRoles_Name("USER");
+    // @Cacheable(value = "permissionTree")
+    // public List<PermissionResponseDTO> getPermissionTree() {
+    //     List<Permission> allPermissions = permissionRepository.findAllByRoles_Name("USER");
 
-        return allPermissions.stream()
-                .filter(p -> p.getParentName() == null) 
-                .map(root -> buildTree(root, allPermissions)) 
-                .collect(Collectors.toList());
-    }
+    //     return allPermissions.stream()
+    //             .filter(p -> p.getParentName() == null) 
+    //             .map(root -> buildTree(root, allPermissions)) 
+    //             .collect(Collectors.toList());
+    // }
 
-    private PermissionResponseDTO buildTree(Permission parent, List<Permission> allPermissions) {
-        List<PermissionResponseDTO> children = allPermissions.stream()
-                .filter(p -> parent.getName().equals(p.getParentName()))
-                .map(child -> buildTree(child, allPermissions))
-                .collect(Collectors.toList());
+    // private PermissionResponseDTO buildTree(Permission parent, List<Permission> allPermissions) {
+    //     List<PermissionResponseDTO> children = allPermissions.stream()
+    //             .filter(p -> parent.getName().equals(p.getParentName()))
+    //             .map(child -> buildTree(child, allPermissions))
+    //             .collect(Collectors.toList());
 
-        return new PermissionResponseDTO(
-                parent.getId(),
-                parent.getName(),
-                parent.getDescription(),
-                false, // isChecked
-                children
-        );
+    //     return new PermissionResponseDTO(
+    //             parent.getId(),
+    //             parent.getName(),
+    //             parent.getDescription(),
+    //             false, // isChecked
+    //             children
+    //     );
+    // }
+
+
+    // --- Sửa N+1 query
+    public List<ColumnPermissionResponseDTO> getPermissionTree(String roleName) {
+        // List<Permission> allPermissions = permissionRepository.findAllByRoles_Name(roleName);
+        List<Permission> allPermissions = permissionRepository.findAllByRoles_Name(roleName);
+        Map<String, List<Permission>> permissionMap = allPermissions.stream()
+                .collect(Collectors.groupingBy(Permission::getCategory));
+        List<ColumnPermissionResponseDTO> result = new ArrayList<>();
+        int columnIndex = 0;
+        for (List<Permission> permissions : permissionMap.values()) {
+            ColumnPermissionResponseDTO column = new ColumnPermissionResponseDTO(columnIndex, drawPermissionTree(permissions));
+            result.add(column);
+            columnIndex++;
+        }
+        return result;        
     }
 
     // ===========================
