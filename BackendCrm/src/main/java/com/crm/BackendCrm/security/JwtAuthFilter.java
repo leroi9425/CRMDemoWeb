@@ -14,6 +14,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -48,14 +50,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             
             if (roleName != null) {
                 // 2. Chọc xuống Redis lấy mảng quyền (Siêu tốc độ)
-                java.util.List<String> permissions = roleService.getPermissionNamesByRoleName(roleName);
+                List<String> permissions = roleService.getPermissionNamesByRoleName(roleName);
                 // for (String perm : permissions) {
                 //     System.out.println("Permission for role " + roleName + ": " + perm);
                 // }
                 // 3. Biến thành mảng quyền của Spring Security
-                java.util.List<GrantedAuthority> authorities = permissions.stream()
+                List<GrantedAuthority> authorities = permissions.stream()
                         .map(SimpleGrantedAuthority::new)
-                        .collect(java.util.stream.Collectors.toList());
+                        .collect(Collectors.toList());
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         username,
                         null,

@@ -2,6 +2,7 @@ package com.crm.BackendCrm.service;
 
 import com.crm.BackendCrm.dto.Request.UserRequestDTO;
 import com.crm.BackendCrm.dto.Response.UserResponseDTO;
+import com.crm.BackendCrm.entity.Permission;
 import com.crm.BackendCrm.entity.Role;
 import com.crm.BackendCrm.entity.User;
 import com.crm.BackendCrm.repository.RoleRepository;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -77,14 +79,31 @@ public class UserService {
         System.out.println("UserService: chuan bi xem co phai admin khong");
         User user = userRepository.findById(userId).
         orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "user not found"));
-        Role role = roleRepository.findByUsers_Username(user.getUsername())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy role của user"));
+        boolean isAdmin = false;
 
-        System.out.println("UserService: role.getName():"+role.getName());
-        if(role.getName().equals("ADMIN"))
-            return true;
-        else
-            return false;
+        Set<Role> roles = user.getRoles(); // Assuming each user has only one role
+        for (Role role : roles) {
+            if (role.getName().equals("ADMIN")) {
+                System.out.println("UserService: user co quyen admin");
+                isAdmin = true;
+            }
+        }
+        return isAdmin;        
+    }
+    public boolean isPackageManager(Long userId){
+        System.out.println("UserService: chuan bi xem co phai admin khong");
+        boolean isPackageManager = false;
+        User user = userRepository.findById(userId).
+        orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "user not found"));
+        for(Role role: user.getRoles()){
+            for(Permission permission: role.getPermissions()){
+                if(permission.getName().equals("QUAN_LY_GOI")){
+                    System.out.println("UserService: user co quyen QUAN_LY_GOI");
+                    isPackageManager = true;
+                }
+            }
+        }
+        return isPackageManager;
     }
 
     private UserResponseDTO toDTO(User u) {

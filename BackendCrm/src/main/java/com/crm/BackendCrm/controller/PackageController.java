@@ -19,6 +19,8 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -56,6 +58,7 @@ public class PackageController {
         return ResponseEntity.ok(tree);
     }
     @GetMapping("/request/edit/{id}")
+    @PreAuthorize("hasAuthority('XEM_KHACH_HANG')")
     public ResponseEntity<PackageDetailResponseDto> drawFormEdit(
         @RequestHeader("Authorization") String header, 
         @PathVariable Long id
@@ -92,18 +95,27 @@ public class PackageController {
         System.out.println("PackageController: chuẩn bị thêm quyền mới");
         return packageService.create(pDto);
     }
-    @PutMapping("")
-    public PackageResponseDTO updatePack(@Valid @RequestBody PackageRequestDTO pDto, @RequestHeader("Authorization") String header) {
-        Long userId = getUserIdByAuth(header);
-        if(!userService.isAdmin(userId)){
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "bạn không có quyền thực hiện lệnh này");
-        }
+
+    @PutMapping("/{id}")
+    @PreAuthorize ("hasAuthority('SUA_GOI')")
+    public PackageResponseDTO updatePack(
+        @Valid @RequestBody PackageRequestDTO pDto, 
+        @RequestHeader("Authorization") String header, 
+        @PathVariable Long id
+    ) {
         System.out.println("PackageController: chuẩn bị cập nhật gói");
-        return packageService.update(pDto);
+        return packageService.update(pDto, id);
     }
     
     private Long getUserIdByAuth(String authHeader){
         String jwt = authHeader.substring(7);
         return jwtUtils.extractUserId(jwt);
+    }
+    @DeleteMapping ("/{id}")
+    @PreAuthorize ("hasAuthority('XOA_GOI')")
+    public ResponseEntity<Void> deletePack(@RequestHeader("Authorization") String header, @PathVariable Long id) {
+
+        packageService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

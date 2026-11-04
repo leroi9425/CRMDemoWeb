@@ -84,18 +84,21 @@ public class PackageService {
         if (isExitsPackage(pDto)){
            throw new ResponseStatusException(HttpStatus.CONFLICT);
         }
-        
+        Package pack = packageRepository.findById(packageId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy gói với id:"+packageId));
         List<Permission> permissions = permissionRepository.findAllByNameIn(pDto.listPermissionNames());
-        Package newPack = new Package();
-        newPack.setName(pDto.name());
-        newPack.setPrice(pDto.price());
-        newPack.setDescription(pDto.description());
-        newPack.setStatus(pDto.status());
-        newPack.setPermissions(new HashSet<>(permissions));
+        pack.setName(pDto.name());
+        pack.setPrice(pDto.price());
+        pack.setDescription(pDto.description());
+        pack.setStatus(pDto.status());
+        pack.setPermissions(new HashSet<>(permissions));
 
-        packageRepository.save(newPack);
-        
-        return toDTO(newPack);
+        packageRepository.save(pack);
+
+        return toDTO(pack);
+    }
+    public void delete(Long packageId){
+        packageRepository.deleteById(packageId);
     }
     private boolean isExitsPermissionNotForUser(PackageRequestDTO pDto){
         List<Permission> listUserPermissions = permissionRepository.findAllByRoles_Name("USER");

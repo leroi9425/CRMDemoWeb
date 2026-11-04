@@ -26,36 +26,42 @@ public class UserController {
     @GetMapping
     @PreAuthorize("hasAuthority('QUAN_LY_USER')")
     public List<UserResponseDTO> getAll() {
+        System.out.println("UserController: chuẩn bị xem tất cả user");
         return userService.getAll();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('QUAN_LY_USER')")
     public UserResponseDTO getById(@PathVariable Long id) {
+        System.out.println("UserController: chuẩn bị xem user theo id");
         return userService.getById(id);
     }
 
     @PostMapping
     @PreAuthorize("hasAuthority('QUAN_LY_USER')")
     public ResponseEntity<UserResponseDTO> create(@Valid @RequestBody UserRequestDTO dto) {
+        System.out.println("UserController: chuẩn bị thêm user mới");
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(dto));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('QUAN_LY_USER')")
     public UserResponseDTO update(@PathVariable Long id, @Valid @RequestBody UserRequestDTO dto) {
+        System.out.println("UserController: chuẩn bị cập nhật user");
         return userService.update(id, dto);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('QUAN_LY_USER')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
+        System.out.println("UserController: chuẩn bị xóa user");
         userService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/me/company")
     public List<UserResponseDTO> getMyCompany(@RequestHeader("Authorization") String authHeader) {
+        System.out.println("UserController: chuẩn bị xem tất cả user trong công ty của tôi");
         String jwt = authHeader.substring(7);
         String username = jwtUtils.extractUsername(jwt);
 
