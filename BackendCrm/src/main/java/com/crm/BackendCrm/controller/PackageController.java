@@ -54,7 +54,7 @@ public class PackageController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "bạn không có quyền thực hiện lệnh này");
         }
         System.out.println("PackageController: chuẩn bị tạo cây");
-        List<ColumnPermissionResponseDTO> tree = permissionService.getColumnPermissionTree("USER");
+        List<ColumnPermissionResponseDTO> tree = permissionService.getPermissionTree("USER");
         return ResponseEntity.ok(tree);
     }
     @GetMapping("/{id}")

@@ -40,7 +40,7 @@ public class PermissionController {
     @GetMapping("/tree/admin/column")
     public ResponseEntity<List<ColumnPermissionResponseDTO>> getTreeAdminColumn() {
         System.out.println("PermissionController: chuẩn bị tạo cây cho admin");
-        List<ColumnPermissionResponseDTO> tree = permissionService.getColumnPermissionTree("ADMIN");
+        List<ColumnPermissionResponseDTO> tree = permissionService.getPermissionTree("ADMIN");
         return ResponseEntity.ok(tree);
     }
 

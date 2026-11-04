@@ -75,22 +75,7 @@ public class PermissionService {
 
     // vẽ cây theo cột
     // cài list vào đoạn này, hàm sau chỉ cần gọi list
-    public List<ColumnPermissionResponseDTO> getColumnPermissionTree(String roleName){
-        // Tạo list category
-        List<String> listCategory = permissionRepository.findDistinctCategories();
-        List<ColumnPermissionResponseDTO> result = new ArrayList<>();
-        for (int i=0 ; i<listCategory.size() ; i++){
-            List<PermissionResponseDTO> column = getPermissionTreeByCategoryAndRoleName(listCategory.get(i), roleName);
-            ColumnPermissionResponseDTO cpDto = new ColumnPermissionResponseDTO(i, column);
-            result.add(cpDto);
-        }
-        return result;
-    }
-    public List<PermissionResponseDTO> getPermissionTreeByCategoryAndRoleName(String category, String roleName){
-        System.out.println("Vẽ cây loại ko đệ quy");
-        List<Permission> allPermissions = permissionRepository.findAllByCategoryAndRoles_Name(category, roleName);
-        return drawPermissionTree(allPermissions);
-    }
+
     private Map<String, PermissionResponseDTO> buildPermissionMap(List<Permission> allPermissions) {
         Map<String, PermissionResponseDTO> permissionMap = new HashMap<>();
         for (Permission permission : allPermissions) {
@@ -99,8 +84,10 @@ public class PermissionService {
         }
         return permissionMap;
     }
-    private  List<PermissionResponseDTO> buildTreeFromMap(Map<String, PermissionResponseDTO> permissionMap, List<Permission> allPermissions){
-        List<PermissionResponseDTO> root = new ArrayList<>();
+    
+    public List<PermissionResponseDTO> drawPermissionTree(List<Permission> allPermissions){
+        Map<String, PermissionResponseDTO> permissionMap = buildPermissionMap(allPermissions);
+       List<PermissionResponseDTO> root = new ArrayList<>();
 
         for (Permission permission : allPermissions){
             PermissionResponseDTO p = permissionMap.get(permission.getName());
@@ -115,12 +102,6 @@ public class PermissionService {
                     parent.children().add(p);
             }
         }
-
-        return root;
-    }
-    public List<PermissionResponseDTO> drawPermissionTree(List<Permission> allPermissions){
-        Map<String, PermissionResponseDTO> permissionMap = buildPermissionMap(allPermissions);
-        List<PermissionResponseDTO> root = buildTreeFromMap(permissionMap, allPermissions);
 
         return root;
     }
