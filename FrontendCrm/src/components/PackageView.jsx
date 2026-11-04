@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
-import { getPackages, createPackage, updatePackage, requestCreate, requestEdit } from "../api/packageApi";
+import { getPackages, createPackage, updatePackage, deletePackage, requestCreate, requestEdit } from "../api/packageApi";
 import TreeNode from "./Permission/TreeNode";
 
 export default function PackageView() {
     const [currentView, setCurrentView] = useState("LIST"); // "LIST" | "CREATE" | "EDIT"
     const [editingId, setEditingId] = useState(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deletingId, setDeletingId] = useState(null);
+    const [toasts, setToasts] = useState([]);
     const [packages, setPackages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
@@ -49,6 +52,14 @@ export default function PackageView() {
             style: "currency",
             currency: "VND",
         }).format(num);
+    };
+
+    const showToast = (message, type = "success") => {
+        const id = Date.now();
+        setToasts(prev => [...prev, { id, message, type }]); 
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, 3000);
     };
 
     // Trích xuất danh sách tên quyền có isChecked = true từ cây quyền phân cột
@@ -170,12 +181,10 @@ export default function PackageView() {
         if (e) e.preventDefault();
 
         if (!formData.name.trim()) {
-            alert("Vui lòng nhập tên gói dịch vụ!");
             return;
         }
 
         if (formData.price === "" || formData.price === null) {
-            alert("Vui lòng nhập giá bán của gói!");
             return;
         }
 
@@ -191,18 +200,39 @@ export default function PackageView() {
         try {
             if (currentView === "EDIT" && editingId) {
                 await updatePackage(editingId, payload);
-                alert("Cập nhật gói dịch vụ thành công!");
+                showToast("Đã cập nhật gói dịch vụ thành công!", "success");
             } else {
                 await createPackage(payload);
-                alert("Tạo gói dịch vụ thành công!");
+                showToast("Đã tạo gói dịch vụ mới thành công!", "success");
             }
             setCurrentView("LIST");
             fetchPackages();
         } catch (error) {
             console.error(currentView === "EDIT" ? "Lỗi khi cập nhật gói:" : "Lỗi khi tạo gói:", error);
-            alert("Có lỗi xảy ra: " + (error.response?.data?.message || error.message));
+            showToast(error.response?.data?.message || "Có lỗi xảy ra", "danger");
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    // Mở popup xác nhận xóa
+    const handleOpenDelete = (pkg) => {
+        setDeletingId(pkg.id);
+        setIsDeleteModalOpen(true);
+    };
+
+    // Xác nhận xóa gói dịch vụ
+    const confirmDelete = async () => {
+        if (!deletingId) return;
+        try {
+            await deletePackage(deletingId);
+            showToast("Đã xóa gói dịch vụ thành công.", "success");
+            setIsDeleteModalOpen(false);
+            setDeletingId(null);
+            fetchPackages();
+        } catch (error) {
+            console.error("Lỗi khi xóa gói:", error);
+            showToast(error.response?.data?.message || "Lỗi khi xóa gói", "danger");
         }
     };
 
@@ -474,6 +504,16 @@ export default function PackageView() {
                         </button>
                     </div>
                 </form>
+
+                {/* Toasts */}
+                <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+                    {toasts.map(toast => (
+                        <div key={toast.id} className={`flex items-center p-4 rounded shadow-lg border-l-4 min-w-[250px] bg-white text-slate-800 ${toast.type === 'success' ? 'border-emerald-500' : 'border-red-500'}`}>
+                            {toast.type === 'success' ? <i className="fa-solid fa-circle-check text-emerald-500 mr-2"></i> : <i className="fa-solid fa-circle-exclamation text-red-500 mr-2"></i>}
+                            <span className="font-medium text-sm">{toast.message}</span>
+                        </div>
+                    ))}
+                </div>
             </main>
         );
     }
@@ -681,14 +721,11 @@ export default function PackageView() {
                                     </div>
                                 </div>
 
-                                {/* Card Footer: Action buttons (Xóa, Sửa) - Nút vẽ ra nhưng để nguyên */}
+                                {/* Card Footer: Action buttons (Xóa, Sửa) */}
                                 <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
                                     <button
                                         type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            // Xóa gói
-                                        }}
+                                        onClick={() => handleOpenDelete(pkg)}
                                         className="flex-1 inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer border border-rose-200/60"
                                         title="Xóa gói"
                                     >
@@ -711,6 +748,33 @@ export default function PackageView() {
                     ))}
                 </div>
             )}
+
+            {/* Delete Modal */}
+            <div className={`fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center transition-opacity duration-300 ${isDeleteModalOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                <div className={`bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden transition-transform duration-300 ${isDeleteModalOpen ? 'scale-100' : 'scale-95'}`}>
+                    <div className="p-6 text-center">
+                        <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4 text-danger">
+                            <i className="fa-solid fa-triangle-exclamation text-3xl"></i>
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900 mb-2">Xác nhận xóa?</h3>
+                        <p className="text-slate-500 text-sm mb-6">Bạn có chắc chắn muốn xóa gói dịch vụ này không? Hành động này không thể hoàn tác.</p>
+                        <div className="flex justify-center space-x-3">
+                            <button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 w-full cursor-pointer">Hủy bỏ</button>
+                            <button onClick={confirmDelete} className="px-4 py-2 text-sm font-medium text-white bg-danger rounded-lg hover:bg-red-600 w-full cursor-pointer">Đồng ý Xóa</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Toasts */}
+            <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+                {toasts.map(toast => (
+                    <div key={toast.id} className={`flex items-center p-4 rounded shadow-lg border-l-4 min-w-[250px] bg-white text-slate-800 ${toast.type === 'success' ? 'border-emerald-500' : 'border-red-500'}`}>
+                        {toast.type === 'success' ? <i className="fa-solid fa-circle-check text-emerald-500 mr-2"></i> : <i className="fa-solid fa-circle-exclamation text-red-500 mr-2"></i>}
+                        <span className="font-medium text-sm">{toast.message}</span>
+                    </div>
+                ))}
+            </div>
         </main>
     );
 }

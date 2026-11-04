@@ -58,7 +58,6 @@ public class PackageController {
         return ResponseEntity.ok(tree);
     }
     @GetMapping("/request/edit/{id}")
-    @PreAuthorize("hasAuthority('XEM_KHACH_HANG')")
     public ResponseEntity<PackageDetailResponseDto> drawFormEdit(
         @RequestHeader("Authorization") String header, 
         @PathVariable Long id
@@ -114,7 +113,7 @@ public class PackageController {
     @DeleteMapping ("/{id}")
     @PreAuthorize ("hasAuthority('XOA_GOI')")
     public ResponseEntity<Void> deletePack(@RequestHeader("Authorization") String header, @PathVariable Long id) {
-
+        System.out.println("PackageController: chuẩn bị xóa gói");
         packageService.delete(id);
         return ResponseEntity.noContent().build();
     }

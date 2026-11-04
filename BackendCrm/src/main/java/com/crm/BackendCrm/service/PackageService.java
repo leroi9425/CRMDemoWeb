@@ -98,6 +98,7 @@ public class PackageService {
         return toDTO(pack);
     }
     public void delete(Long packageId){
+        System.out.println("PackageService: chuẩn bị xóa gói");
         packageRepository.deleteById(packageId);
     }
     private boolean isExitsPermissionNotForUser(PackageRequestDTO pDto){
