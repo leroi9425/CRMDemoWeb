@@ -10,5 +10,5 @@ public record PackageRequestDTO(
     @NotBlank String name,
     String description,
     @NotNull Boolean status,
-    @NotNull List<Long> listPermissionId
+    @NotNull List<String> listPermissionNames
 ) {}

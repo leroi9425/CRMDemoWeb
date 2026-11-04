@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.crm.BackendCrm.dto.Request.PackageRequestDTO;
+import com.crm.BackendCrm.dto.Response.ColumnPermissionResponseDTO;
 import com.crm.BackendCrm.dto.Response.PackageDetailResponseDto;
 import com.crm.BackendCrm.dto.Response.PackageResponseDTO;
 import com.crm.BackendCrm.dto.Response.PermissionResponseDTO;
@@ -34,11 +35,13 @@ public class PackageService {
         return packageRepository.findAll().stream().map(this::toDTO).collect(Collectors.toList());
     }
     public PackageDetailResponseDto getDetailPackage(Long packageId){
+        System.out.println("PackageService: chuẩn bị xem chi tiết gói");
         Package p = packageRepository.findById(packageId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy gói với id:"+packageId));
 
-        List<Permission> packPermission = new ArrayList<>(p.getPermissions());
-        List<PermissionResponseDTO> tree = permissionService.drawPermissionTree(packPermission);
+        List<String> checkNameList = new ArrayList<>(p.getPermissions().stream().map(Permission::getName).collect(Collectors.toList()));
+
+        List<ColumnPermissionResponseDTO> tree = permissionService.getPermissionTreeChecked("USER", checkNameList);
 
         return new PackageDetailResponseDto(
             p.getId(),
@@ -61,7 +64,28 @@ public class PackageService {
         // 4.1.3.12
         // nên viết procedure hay là code ?
         // thử code trước
-        List<Permission> permissions = permissionRepository.findAllById(pDto.listPermissionId());
+        List<Permission> permissions = permissionRepository.findAllByNameIn(pDto.listPermissionNames());
+        Package newPack = new Package();
+        newPack.setName(pDto.name());
+        newPack.setPrice(pDto.price());
+        newPack.setDescription(pDto.description());
+        newPack.setStatus(pDto.status());
+        newPack.setPermissions(new HashSet<>(permissions));
+
+        packageRepository.save(newPack);
+        
+        return toDTO(newPack);
+    }
+    public PackageResponseDTO update(PackageRequestDTO pDto, Long packageId){
+        if(isExitsPermissionNotForUser(pDto)){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+
+        if (isExitsPackage(pDto)){
+           throw new ResponseStatusException(HttpStatus.CONFLICT);
+        }
+        
+        List<Permission> permissions = permissionRepository.findAllByNameIn(pDto.listPermissionNames());
         Package newPack = new Package();
         newPack.setName(pDto.name());
         newPack.setPrice(pDto.price());
@@ -75,11 +99,11 @@ public class PackageService {
     }
     private boolean isExitsPermissionNotForUser(PackageRequestDTO pDto){
         List<Permission> listUserPermissions = permissionRepository.findAllByRoles_Name("USER");
-        Set<Long> setPermissionDto = new HashSet<>(pDto.listPermissionId());
-        Set<Long> setPermissionDB = new HashSet<>(
+        Set<String> setPermissionDto = new HashSet<>(pDto.listPermissionNames());
+        Set<String> setPermissionDB = new HashSet<>(
             listUserPermissions
             .stream()
-            .map(Permission::getId)
+            .map(Permission::getName)
             .collect(Collectors.toSet())
         );
         // thêm dấu ! cho phù hợp ngữ cảnh của hàm
@@ -87,30 +111,31 @@ public class PackageService {
     }
     private boolean isExitsPackage(PackageRequestDTO pDto){
         List<Object[]> listPackagePermission = packageRepository.getAllPackagePermission();
-        List<Long> listPermissionFromDto = pDto.listPermissionId();
+        List<String> listPermissionFromDto = pDto.listPermissionNames();
 
-        Map<Long, List<Long>> packagePermission = getMapFromListObj(listPackagePermission);
+        // Map với key = packageId, value = list permissionName
+        Map<Long, List<String>> packagePermission = getMapFromListObj(listPackagePermission);
         boolean isExistPackage = packagePermission
                                 .values()
                                 .stream()
                                 .anyMatch(
-                                    listPermissionId ->
-                                    new HashSet<>(listPermissionFromDto).equals(new HashSet<>(listPermissionId))
+                                    listPermissionName ->
+                                    new HashSet<>(listPermissionFromDto).equals(new HashSet<>(listPermissionName))
                                 );
         return isExistPackage;
     }
-    private Map<Long, List<Long>> getMapFromListObj(List<Object[]> listPackagePermission){
-        Map<Long, List<Long>> mapPackagePermission = new HashMap<>();
+    private Map<Long, List<String>> getMapFromListObj(List<Object[]> listPackagePermission){
+        Map<Long, List<String>> mapPackagePermission = new HashMap<>();
         for(Object[] pp : listPackagePermission){
             Long packageId = ((Number) pp[0]).longValue();
-            Long permissionId = ((Number) pp[1]).longValue();
+            String permissionName = (String) pp[1];
 
-            List<Long> getListPermission = mapPackagePermission.get(packageId);
+            List<String> getListPermission = mapPackagePermission.get(packageId);
             if (getListPermission == null){
                 getListPermission = new ArrayList<>();
             }
 
-            getListPermission.add(permissionId);
+            getListPermission.add(permissionName);
             mapPackagePermission.put(packageId, getListPermission);
         }
         return mapPackagePermission;

@@ -69,7 +69,7 @@ public class PermissionService {
         }
         return result;        
     }
-    public List<ColumnPermissionResponseDTO> getPermissionTreeChecked(String roleName, List<Long> checkedIds){
+    public List<ColumnPermissionResponseDTO> getPermissionTreeChecked(String roleName, List<String> checkedNames){
          // List<Permission> allPermissions = permissionRepository.findAllByRoles_Name(roleName);
         List<Permission> allPermissions = permissionRepository.findAllByRoles_Name(roleName);
         // Tạo map gồm key = category, value = list permission
@@ -78,26 +78,23 @@ public class PermissionService {
         List<ColumnPermissionResponseDTO> result = new ArrayList<>();
         int columnIndex = 0;
         for (List<Permission> permissions : permissionMap.values()) {
-            ColumnPermissionResponseDTO column = new ColumnPermissionResponseDTO(columnIndex, drawPermissionTreeChecked(permissions, checkedIds));
+            ColumnPermissionResponseDTO column = new ColumnPermissionResponseDTO(columnIndex, drawPermissionTreeChecked(permissions, checkedNames));
             result.add(column);
             columnIndex++;
         }
         return result;        
     }
 
-    // ===========================
+    // ===================================
     // Hàm cho lệnh tạo cây quyền theo cột 
-    // ===========================
-
-    // vẽ cây theo cột
-    // cài list vào đoạn này, hàm sau chỉ cần gọi list
+    // ===================================
 
     public List<PermissionResponseDTO> drawPermissionTree(List<Permission> allPermissions){
 
         Map<String, PermissionResponseDTO> permissionMap = new HashMap<>();
         for (Permission permission : allPermissions) {
             PermissionResponseDTO pDTO = toDTO(permission, false);
-            permissionMap.put(permission.getName(), pDTO); // key = parentName, value = permissionDTO
+            permissionMap.put(permission.getName(), pDTO); // key = name, value = permissionDTO
         }
 
         List<PermissionResponseDTO> root = new ArrayList<>();
@@ -118,12 +115,13 @@ public class PermissionService {
 
         return root;
     }
-    public List<PermissionResponseDTO> drawPermissionTreeChecked(List<Permission> allPermissions, List<Long> checkedIds){
+    public List<PermissionResponseDTO> drawPermissionTreeChecked(List<Permission> allPermissions, List<String> checkedNames){
         Map<String, PermissionResponseDTO> permissionMap = new HashMap<>();
         for (Permission permission : allPermissions) {
-            boolean isChecked = checkedIds.contains(permission.getId());
+            boolean isChecked = checkedNames.contains(permission.getName());
+            System.out.println("PermissionService: permission "+permission.getName()+" isChecked = "+isChecked);
             PermissionResponseDTO pDTO = toDTO(permission, isChecked);
-            permissionMap.put(permission.getName(), pDTO); // key = parentName, value = permissionDTO
+            permissionMap.put(permission.getName(), pDTO); // key = name, value = permissionDTO
         }
 
         List<PermissionResponseDTO> root = new ArrayList<>();

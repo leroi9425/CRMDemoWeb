@@ -24,10 +24,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-
-
-
 
 @RestController
 @RequiredArgsConstructor
@@ -57,6 +55,19 @@ public class PackageController {
         List<ColumnPermissionResponseDTO> tree = permissionService.getPermissionTree("USER");
         return ResponseEntity.ok(tree);
     }
+    @GetMapping("/request/edit/{id}")
+    public ResponseEntity<PackageDetailResponseDto> drawFormEdit(
+        @RequestHeader("Authorization") String header, 
+        @PathVariable Long id
+    ) {
+        System.out.println("PackageController: chuẩn bị lấy thông tin của gói và trả ra cây quyền đã check");
+        Long userId = getUserIdByAuth(header);
+        if(!userService.isAdmin(userId)){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "bạn không có quyền thực hiện lệnh này");
+        }
+        PackageDetailResponseDto packageDetail = packageService.getDetailPackage(id);
+        return ResponseEntity.ok(packageDetail);
+    }
     @GetMapping("/{id}")
     public PackageDetailResponseDto getDetailPackage(@RequestHeader("Authorization") String header, @PathVariable Long id) {
         System.out.println("PackageController: chuẩn bị xem quyền");
@@ -80,6 +91,15 @@ public class PackageController {
         }
         System.out.println("PackageController: chuẩn bị thêm quyền mới");
         return packageService.create(pDto);
+    }
+    @PutMapping("")
+    public PackageResponseDTO updatePack(@Valid @RequestBody PackageRequestDTO pDto, @RequestHeader("Authorization") String header) {
+        Long userId = getUserIdByAuth(header);
+        if(!userService.isAdmin(userId)){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "bạn không có quyền thực hiện lệnh này");
+        }
+        System.out.println("PackageController: chuẩn bị cập nhật gói");
+        return packageService.update(pDto);
     }
     
     private Long getUserIdByAuth(String authHeader){

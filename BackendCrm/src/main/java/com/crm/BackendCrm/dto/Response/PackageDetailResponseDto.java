@@ -8,5 +8,5 @@ public record PackageDetailResponseDto(
     String name,
     String description,
     boolean status,
-    List<PermissionResponseDTO> permisisons
+    List<ColumnPermissionResponseDTO> permissions
 ) {}

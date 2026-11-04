@@ -9,6 +9,7 @@ import java.util.Optional;
 
 public interface PermissionRepository extends JpaRepository<Permission, Long> {
     Optional<Permission> findByName(String name);
+    List<Permission> findAllByNameIn(List<String> names);
     Optional<Permission> findById(Long id);
     @Query("SELECT COUNT(DISTINCT p.category) FROM Permission p")
     int countDistinctCategories();

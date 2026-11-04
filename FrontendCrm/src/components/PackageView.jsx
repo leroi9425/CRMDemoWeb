@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { getPackages, createPackage, requestCreate } from "../api/packageApi";
+import { getPackages, createPackage, updatePackage, requestCreate, requestEdit } from "../api/packageApi";
 import TreeNode from "./Permission/TreeNode";
 
 export default function PackageView() {
-    const [currentView, setCurrentView] = useState("LIST"); // "LIST" | "CREATE"
+    const [currentView, setCurrentView] = useState("LIST"); // "LIST" | "CREATE" | "EDIT"
+    const [editingId, setEditingId] = useState(null);
     const [packages, setPackages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
@@ -17,7 +18,7 @@ export default function PackageView() {
         status: true,
     });
     const [treeData, setTreeData] = useState([]);
-    const [checkedIds, setCheckedIds] = useState([]);
+    const [checkedNames, setCheckedNames] = useState([]);
     const [loadingTree, setLoadingTree] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
@@ -50,15 +51,36 @@ export default function PackageView() {
         }).format(num);
     };
 
+    // Trích xuất danh sách tên quyền có isChecked = true từ cây quyền phân cột
+    const extractCheckedNames = (columns) => {
+        const names = [];
+        const traverse = (node) => {
+            if (!node) return;
+            if (node.isChecked) {
+                names.push(node.name); // Thay vì push node.id, push node.name để phù hợp với backend
+            }
+            if (node.children && Array.isArray(node.children)) {
+                node.children.forEach(traverse);
+            }
+        };
+        if (Array.isArray(columns)) {
+            columns.forEach((col) => {
+                col.listPermission?.forEach(traverse);
+            });
+        }
+        return names;
+    };
+
     // Mở màn hình tạo gói & Gọi API cây quyền /api/permissions/tree/column
     const handleOpenCreate = async () => {
+        setEditingId(null);
         setFormData({
             name: "",
             price: "",
             description: "",
             status: true,
         });
-        setCheckedIds([]);
+        setCheckedNames([]);
         setCurrentView("CREATE");
         setLoadingTree(true);
 
@@ -74,45 +96,77 @@ export default function PackageView() {
         }
     };
 
-    // Đệ quy lấy tất cả ID của node và con cháu
-    const getAllIds = (node, ids = []) => {
-        ids.push(node.id);
-        if (node.children) {
-            node.children.forEach((child) => getAllIds(child, ids));
+    // Bắt sự kiện bấm nút sửa gói
+    const handleOpenEdit = async (pkg) => {
+        setEditingId(pkg.id);
+        setCurrentView("EDIT");
+        setLoadingTree(true);
+
+        try {
+            const res = await requestEdit(pkg.id);
+            console.log("Dữ liệu gói tải về để chỉnh sửa:", res.data);
+            const data = res.data;
+            setFormData({
+                name: data.name || "",
+                price: data.price !== undefined && data.price !== null ? data.price : "",
+                description: data.description || "",
+                status: data.status !== undefined ? Boolean(data.status) : true,
+            });
+            // Hỗ trợ cả permissions lẫn permisisons (đề phòng sai chính tả từ response)
+            const tree = data.permissions || data.permisisons || [];
+            setTreeData(tree);
+
+            // Tự động tích chọn checkbox theo trường isChecked trong response
+            const initialCheckedNames = extractCheckedNames(tree);
+            setCheckedNames(initialCheckedNames);
+        } catch (error) {
+            console.error("Lỗi khi tải dữ liệu gói để sửa:", error);
+            alert("Lỗi khi tải dữ liệu gói: " + (error.response?.data?.message || error.message));
+        } finally {
+            setLoadingTree(false);
         }
-        return ids;
+    };
+
+    // Đệ quy lấy tất cả tên của node và con cháu
+    const getAllNames = (node, names = []) => {
+        names.push(node.name);
+        if (node.children) {
+            node.children.forEach((child) => getAllNames(child, names));
+        }
+        return names;
     };
 
     // Xử lý chọn/bỏ chọn node trên cây quyền
     const handleCheck = (node, isChecked) => {
-        const familyIds = getAllIds(node);
-        setCheckedIds((prev) => {
+        console.log(`Node ${node.name} (Name: ${node.name}) đã được ${isChecked ? "chọn" : "bỏ chọn"}`);
+        const familyNames = getAllNames(node);
+        setCheckedNames((prev) => {
             if (isChecked) {
-                return Array.from(new Set([...prev, ...familyIds]));
+                return Array.from(new Set([...prev, ...familyNames]));
             } else {
-                return prev.filter((id) => !familyIds.includes(id));
+                return prev.filter((name) => !familyNames.includes(name));
             }
         });
     };
 
     // Chọn tất cả quyền
     const handleSelectAll = () => {
-        const allIds = [];
+        const allNames = [];
         treeData.forEach((col) => {
             col.listPermission?.forEach((rootNode) => {
-                getAllIds(rootNode, allIds);
+                getAllNames(rootNode, allNames);
             });
         });
-        setCheckedIds(Array.from(new Set(allIds)));
+        setCheckedNames(Array.from(new Set(allNames)));
     };
 
     // Bỏ chọn tất cả quyền
     const handleDeselectAll = () => {
-        setCheckedIds([]);
+        setCheckedNames([]);
     };
 
-    // Xử lý lưu / tạo gói
-    const handleCreatePackage = async (e) => {
+    // Xử lý lưu gói (Tạo mới hoặc Cập nhật)
+    const handleSavePackage = async (e) => {
         if (e) e.preventDefault();
 
         if (!formData.name.trim()) {
@@ -130,18 +184,23 @@ export default function PackageView() {
             price: Number(formData.price),
             description: formData.description.trim(),
             status: Boolean(formData.status),
-            listPermissionId: checkedIds,
+            listPermissionNames: checkedNames,
         };
 
         setSubmitting(true);
         try {
-            await createPackage(payload);
-            alert("Tạo gói dịch vụ thành công!");
+            if (currentView === "EDIT" && editingId) {
+                await updatePackage(editingId, payload);
+                alert("Cập nhật gói dịch vụ thành công!");
+            } else {
+                await createPackage(payload);
+                alert("Tạo gói dịch vụ thành công!");
+            }
             setCurrentView("LIST");
             fetchPackages();
         } catch (error) {
-            console.error("Lỗi khi tạo gói:", error);
-            alert("Có lỗi xảy ra khi tạo gói: " + (error.response?.data?.message || error.message));
+            console.error(currentView === "EDIT" ? "Lỗi khi cập nhật gói:" : "Lỗi khi tạo gói:", error);
+            alert("Có lỗi xảy ra: " + (error.response?.data?.message || error.message));
         } finally {
             setSubmitting(false);
         }
@@ -163,9 +222,11 @@ export default function PackageView() {
     });
 
     // =========================================================================
-    // MÀN HÌNH 2: TẠO GÓI MỚI (FORM + CÂY QUYỀN)
+    // MÀN HÌNH: TẠO GÓI MỚI / CHỈNH SỬA GÓI (FORM + CÂY QUYỀN)
     // =========================================================================
-    if (currentView === "CREATE") {
+    if (currentView === "CREATE" || currentView === "EDIT") {
+        const isEdit = currentView === "EDIT";
+
         return (
             <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
                 {/* Header thanh điều hướng & nút hành động */}
@@ -181,11 +242,17 @@ export default function PackageView() {
                                 Gói dịch vụ
                             </button>
                             <span>/</span>
-                            <span className="text-slate-800 font-medium">Thêm mới</span>
+                            <span className="text-slate-800 font-medium">
+                                {isEdit ? "Chỉnh sửa" : "Thêm mới"}
+                            </span>
                         </div>
-                        <h1 className="text-2xl font-bold text-slate-900">Tạo Gói Dịch Vụ Mới</h1>
+                        <h1 className="text-2xl font-bold text-slate-900">
+                            {isEdit ? "Cập Nhật Gói Dịch Vụ" : "Tạo Gói Dịch Vụ Mới"}
+                        </h1>
                         <p className="text-sm text-slate-500 mt-0.5">
-                            Thiết lập thông tin tên gói, giá bán và phân bổ cây quyền tính năng
+                            {isEdit
+                                ? "Chỉnh sửa thông tin tên gói, giá bán và cấu hình cây quyền"
+                                : "Thiết lập thông tin tên gói, giá bán và phân bổ cây quyền tính năng"}
                         </p>
                     </div>
 
@@ -201,7 +268,7 @@ export default function PackageView() {
                         </button>
                         <button
                             type="button"
-                            onClick={handleCreatePackage}
+                            onClick={handleSavePackage}
                             disabled={submitting}
                             className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl shadow-sm hover:shadow transition-all cursor-pointer flex items-center"
                         >
@@ -213,14 +280,14 @@ export default function PackageView() {
                             ) : (
                                 <>
                                     <i className="fa-solid fa-check mr-2"></i>
-                                    Lưu gói dịch vụ
+                                    {isEdit ? "Cập nhật gói" : "Lưu gói dịch vụ"}
                                 </>
                             )}
                         </button>
                     </div>
                 </div>
 
-                <form onSubmit={handleCreatePackage} className="space-y-6">
+                <form onSubmit={handleSavePackage} className="space-y-6">
                     {/* KHỐI 1: THÔNG TIN CƠ BẢN CỦA GÓI */}
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-5">
@@ -326,7 +393,7 @@ export default function PackageView() {
                             <div className="flex items-center space-x-2">
                                 <h3 className="text-lg font-semibold text-slate-800">Chọn quyền</h3>
                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                                    Đã chọn: {checkedIds.length} quyền
+                                    Đã chọn: {checkedNames.length} quyền
                                 </span>
                             </div>
 
@@ -365,9 +432,9 @@ export default function PackageView() {
                                         >
                                             {colData.listPermission?.map((rootNode) => (
                                                 <TreeNode
-                                                    key={rootNode.id}
+                                                    key={rootNode.name}
                                                     node={rootNode}
-                                                    checkedIds={checkedIds}
+                                                    checkedNames={checkedNames}
                                                     handleCheck={handleCheck}
                                                 />
                                             ))}
@@ -401,7 +468,7 @@ export default function PackageView() {
                             ) : (
                                 <>
                                     <i className="fa-solid fa-check mr-2"></i>
-                                    Hoàn tất tạo gói
+                                    {isEdit ? "Lưu thay đổi" : "Hoàn tất tạo gói"}
                                 </>
                             )}
                         </button>
@@ -618,6 +685,10 @@ export default function PackageView() {
                                 <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
                                     <button
                                         type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Xóa gói
+                                        }}
                                         className="flex-1 inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer border border-rose-200/60"
                                         title="Xóa gói"
                                     >
@@ -627,6 +698,7 @@ export default function PackageView() {
 
                                     <button
                                         type="button"
+                                        onClick={() => handleOpenEdit(pkg)}
                                         className="flex-1 inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer border border-blue-200/60"
                                         title="Sửa thông tin gói"
                                     >

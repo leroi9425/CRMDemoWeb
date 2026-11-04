@@ -4,8 +4,8 @@ import { useState } from "react";
 // 1. CÂY QUYỀN ĐỆ QUY
 // =========================================================================
 
-export default function TreeNode({ node, checkedIds, handleCheck }) {
-  const isChecked = checkedIds.includes(node.id);
+export default function TreeNode({ node, checkedNames, isChecked, handleCheck }) {
+  const isNodeChecked = checkedNames !== undefined ? checkedNames.includes(node.name) : (isChecked ?? node.isChecked ?? false);
   const hasChildren = node.children && node.children.length > 0;
   
   // State quản lý việc thu gọn / mở rộng các quyền con
@@ -32,7 +32,7 @@ export default function TreeNode({ node, checkedIds, handleCheck }) {
         <label className={`flex items-center cursor-pointer whitespace-nowrap ${hasChildren ? 'font-bold' : 'font-normal'}`}>
           <input
             type="checkbox"
-            checked={isChecked}
+            checked={isNodeChecked}
             onChange={(e) => handleCheck(node, e.target.checked)}
             className="mr-3 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
           />
@@ -49,7 +49,13 @@ export default function TreeNode({ node, checkedIds, handleCheck }) {
       {hasChildren && isExpanded && (
         <div className="border-l border-dashed border-slate-300 pl-2 mt-1">
           {node.children.map(child => (
-            <TreeNode key={child.id} node={child} checkedIds={checkedIds} handleCheck={handleCheck} />
+            <TreeNode 
+              key={child.id} 
+              node={child} 
+              checkedNames={checkedNames}
+              isChecked={checkedNames !== undefined ? checkedNames.includes(child.name) : child.isChecked} 
+              handleCheck={handleCheck} 
+            />
           ))}
         </div>
       )}
