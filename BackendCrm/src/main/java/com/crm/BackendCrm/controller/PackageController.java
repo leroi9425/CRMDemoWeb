@@ -8,6 +8,8 @@ import com.crm.BackendCrm.dto.Request.PackageRequestDTO;
 import com.crm.BackendCrm.dto.Response.ColumnPermissionResponseDTO;
 import com.crm.BackendCrm.dto.Response.PackageDetailResponseDto;
 import com.crm.BackendCrm.dto.Response.PackageResponseDTO;
+import com.crm.BackendCrm.entity.User;
+import com.crm.BackendCrm.repository.UserRepository;
 import com.crm.BackendCrm.security.JwtUtils;
 import com.crm.BackendCrm.service.PackageService;
 import com.crm.BackendCrm.service.PermissionService;
@@ -37,6 +39,7 @@ public class PackageController {
     private final UserService userService;
     private final PackageService packageService;
     private final PermissionService permissionService;
+    private final UserRepository userRepository;
     
     @GetMapping()
     public List<PackageResponseDTO> getAllPackage(@RequestHeader("Authorization") String header) {
@@ -79,9 +82,14 @@ public class PackageController {
         }
         return packageService.getDetailPackage(id);
     }
-    @GetMapping("buy/id")
-    public ResponseEntity buyPackage (@RequestParam String param) {
+    @GetMapping("buy/{id}")
+    public ResponseEntity buyPackage (@PathVariable Long id, @RequestHeader ("Authorization") String header) {
         // code chức năng mua gói ở đây
+        Long userId = getUserIdByAuth(header);
+        Long packageId = id;
+        User user = userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        Long companyId = user.getCompany().getId();
+        packageService.buyPackage(companyId, packageId);
         return ResponseEntity.ok().build();
     }
     

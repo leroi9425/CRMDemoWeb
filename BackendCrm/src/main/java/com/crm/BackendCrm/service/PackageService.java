@@ -1,5 +1,6 @@
 package com.crm.BackendCrm.service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,6 +10,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -16,9 +18,11 @@ import com.crm.BackendCrm.dto.Request.PackageRequestDTO;
 import com.crm.BackendCrm.dto.Response.ColumnPermissionResponseDTO;
 import com.crm.BackendCrm.dto.Response.PackageDetailResponseDto;
 import com.crm.BackendCrm.dto.Response.PackageResponseDTO;
-import com.crm.BackendCrm.dto.Response.PermissionResponseDTO;
+import com.crm.BackendCrm.entity.Company;
+import com.crm.BackendCrm.entity.CompanyPackage;
 import com.crm.BackendCrm.entity.Package;
 import com.crm.BackendCrm.entity.Permission;
+import com.crm.BackendCrm.repository.CompanyPackageRepository;
 import com.crm.BackendCrm.repository.PackageRepository;
 import com.crm.BackendCrm.repository.PermissionRepository;
 
@@ -30,6 +34,7 @@ public class PackageService {
     private final PackageRepository packageRepository;
     private final PermissionRepository permissionRepository;
     private final PermissionService permissionService;
+    private final CompanyPackageRepository companyPackageRepository;
 
     public List<PackageResponseDTO> getAllPackage(){
         return packageRepository.findAll().stream().map(this::toDTO).collect(Collectors.toList());
@@ -51,6 +56,46 @@ public class PackageService {
             p.getStatus(),
             tree
         );
+    }
+    private void createCompanyPackage(Long companyId, Long packageId){
+        Package pack = packageRepository.findById(packageId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy gói với id:"+packageId));
+        Company company = companyPackageRepository.findByCompany_Id(companyId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công ty với id:"+companyId));
+
+        CompanyPackage newCompanyPackage = new CompanyPackage();
+        newCompanyPackage.setCompany(company);
+        newCompanyPackage.setPackInfo(pack);
+        newCompanyPackage.setStartDate(LocalDate.now());
+        newCompanyPackage.setEndDate(LocalDate.now().plusDays(30)); // Giả sử gói có thời hạn 30 ngày
+        companyPackageRepository.save(newCompanyPackage);
+    }
+    public ResponseEntity buyPackage(Long companyId, Long packageId){
+        Package pack = packageRepository.findById(packageId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy gói với id:"+packageId));
+
+        if (pack.getStatus() == false){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy gói với id:"+packageId);
+        }
+
+        CompanyPackage packageInfo = companyPackageRepository.findTopByCompany_IdAndPackInfo_IdOrderByEndDateDesc(companyId, packageId)
+        .orElse(null);
+
+        if (packageInfo == null) {
+            createCompanyPackage(companyId, packageId);
+        }
+
+        LocalDate expiredDate = packageInfo.getEndDate();
+        // kiểm tra gói hết hạn chưa
+        if (expiredDate.isBefore(LocalDate.now())){ // hết hạn rồi
+           createCompanyPackage(companyId, packageId); // mua mới
+        }
+        else{
+            // gia hạn gói
+            packageInfo.setEndDate(expiredDate.plusDays(30)); // gia hạn thêm 30 ngày
+            companyPackageRepository.save(packageInfo);
+        }
+        return ResponseEntity.ok().build();
     }
     public PackageResponseDTO create(PackageRequestDTO pDto){
         if(isExitsPermissionNotForUser(pDto)){

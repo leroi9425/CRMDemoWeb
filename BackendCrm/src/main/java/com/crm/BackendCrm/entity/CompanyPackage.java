@@ -3,6 +3,9 @@ package com.crm.BackendCrm.entity;
 import java.time.LocalDate;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -11,20 +14,24 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-// @Entity 
+@Entity 
 @AllArgsConstructor 
 @NoArgsConstructor 
 @Setter 
 @Getter 
-// @Table (name = "company_package")
+@Table (name = "company_package")
 public class CompanyPackage {
-    // @ManyToOne 
-    // @JoinColumn (name = "company_id", referencedColumnName = "id")
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @ManyToOne 
+    @JoinColumn (name = "company_id", referencedColumnName = "id")
     private Company company;
 
-    // @ManyToOne 
-    // @JoinColumn (name = "package_id", referencedColumnName = "id")
-    private Package pack;
+    @ManyToOne 
+    @JoinColumn (name = "package_id", referencedColumnName = "id")
+    private Package packInfo;
 
     private LocalDate startDate;
     private LocalDate endDate;
