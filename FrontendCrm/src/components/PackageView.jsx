@@ -703,7 +703,7 @@ export default function PackageView() {
                                     </div>
 
                                     {/* Gợi ý quyền / chức năng trong gói */}
-                                    <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 mb-2">
+                                    {/* <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 mb-2">
                                         <div className="flex items-center text-xs font-semibold text-slate-600 mb-2">
                                             <i className="fa-solid fa-shield-halved text-blue-500 mr-1.5"></i>
                                             Quyền hạn & tính năng đi kèm
@@ -718,7 +718,7 @@ export default function PackageView() {
                                                 Hỗ trợ kỹ thuật ưu tiên
                                             </li>
                                         </ul>
-                                    </div>
+                                    </div> */}
                                 </div>
 
                                 {/* Card Footer: Action buttons (Xóa, Sửa) */}
