@@ -1,12 +1,17 @@
 import { useState, useEffect } from "react";
-import { getPackages, createPackage, updatePackage, deletePackage, requestCreate, requestEdit } from "../api/packageApi";
+import { getPackages, createPackage, updatePackage, deletePackage, requestCreate, requestEdit, buyPackage } from "../api/packageApi";
+import { useAuth } from "../context/AuthContext";
 import TreeNode from "./Permission/TreeNode";
 
 export default function PackageView() {
+    const { auth } = useAuth();
     const [currentView, setCurrentView] = useState("LIST"); // "LIST" | "CREATE" | "EDIT"
     const [editingId, setEditingId] = useState(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState(null);
+    const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
+    const [buyingPackage, setBuyingPackage] = useState(null);
+    const [isBuying, setIsBuying] = useState(false);
     const [toasts, setToasts] = useState([]);
     const [packages, setPackages] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -233,6 +238,30 @@ export default function PackageView() {
         } catch (error) {
             console.error("Lỗi khi xóa gói:", error);
             showToast(error.response?.data?.message || "Lỗi khi xóa gói", "danger");
+        }
+    };
+
+    // Mở popup xác nhận mua gói
+    const handleOpenBuy = (pkg) => {
+        setBuyingPackage(pkg);
+        setIsBuyModalOpen(true);
+    };
+
+    // Xác nhận mua gói dịch vụ
+    const confirmBuyPackage = async () => {
+        if (!buyingPackage) return;
+        setIsBuying(true);
+        try {
+            await buyPackage(buyingPackage.id);
+            showToast(`Đã mua thành công gói "${buyingPackage.name}"!`, "success");
+            setIsBuyModalOpen(false);
+            setBuyingPackage(null);
+            fetchPackages();
+        } catch (error) {
+            console.error("Lỗi khi mua gói:", error);
+            showToast(error.response?.data?.message || "Có lỗi xảy ra khi mua gói dịch vụ", "danger");
+        } finally {
+            setIsBuying(false);
         }
     };
 
@@ -539,17 +568,19 @@ export default function PackageView() {
                     </div>
                 </div>
 
-                {/* Nút Thêm mới - Nhấn vào sẽ chuyển sang giao diện tạo gói */}
-                <div className="flex items-center space-x-3">
-                    <button
-                        type="button"
-                        onClick={handleOpenCreate}
-                        className="inline-flex items-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl shadow-sm hover:shadow transition-all duration-200 cursor-pointer"
-                    >
-                        <i className="fa-solid fa-plus mr-2 text-xs"></i>
-                        <span>Thêm gói mới</span>
-                    </button>
-                </div>
+                {/* Nút Thêm mới - Chỉ hiển thị khi có quyền THEM_GOI */}
+                {auth?.permissions?.includes("THEM_GOI") && (
+                    <div className="flex items-center space-x-3">
+                        <button
+                            type="button"
+                            onClick={handleOpenCreate}
+                            className="inline-flex items-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl shadow-sm hover:shadow transition-all duration-200 cursor-pointer"
+                        >
+                            <i className="fa-solid fa-plus mr-2 text-xs"></i>
+                            <span>Thêm gói mới</span>
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Thanh công cụ tìm kiếm và lọc */}
@@ -721,27 +752,51 @@ export default function PackageView() {
                                     </div>
                                 </div>
 
-                                {/* Card Footer: Action buttons (Xóa, Sửa) */}
-                                <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+                                {/* Card Footer: Action buttons (Mua gói, Sửa, Xóa) */}
+                                <div className="mt-5 pt-4 border-t border-slate-100 space-y-3">
+                                    {/* Nút Mua Gói */}
                                     <button
                                         type="button"
-                                        onClick={() => handleOpenDelete(pkg)}
-                                        className="flex-1 inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer border border-rose-200/60"
-                                        title="Xóa gói"
+                                        disabled={!pkg.status}
+                                        onClick={() => handleOpenBuy(pkg)}
+                                        className={`w-full py-2.5 px-4 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer shadow-sm ${
+                                            pkg.status
+                                                ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white hover:shadow-md active:scale-[0.98]"
+                                                : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                                        }`}
                                     >
-                                        <i className="fa-solid fa-trash-can mr-1.5 text-xs"></i>
-                                        <span>Xóa</span>
+                                        <i className="fa-solid fa-cart-shopping text-xs mr-1"></i>
+                                        <span>{pkg.status ? "Mua gói ngay" : "Tạm ngưng bán"}</span>
                                     </button>
 
-                                    <button
-                                        type="button"
-                                        onClick={() => handleOpenEdit(pkg)}
-                                        className="flex-1 inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer border border-blue-200/60"
-                                        title="Sửa thông tin gói"
-                                    >
-                                        <i className="fa-solid fa-pen-to-square mr-1.5 text-xs"></i>
-                                        <span>Sửa</span>
-                                    </button>
+                                    {/* Các nút quản trị: Xóa / Sửa theo quyền */}
+                                    {(auth?.permissions?.includes("XOA_GOI") || auth?.permissions?.includes("SUA_GOI")) && (
+                                        <div className="flex items-center justify-between gap-2 pt-1">
+                                            {auth?.permissions?.includes("XOA_GOI") && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOpenDelete(pkg)}
+                                                    className="flex-1 inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer border border-rose-200/60"
+                                                    title="Xóa gói"
+                                                >
+                                                    <i className="fa-solid fa-trash-can mr-1.5 text-xs"></i>
+                                                    <span>Xóa</span>
+                                                </button>
+                                            )}
+
+                                            {auth?.permissions?.includes("SUA_GOI") && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOpenEdit(pkg)}
+                                                    className="flex-1 inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer border border-blue-200/60"
+                                                    title="Sửa thông tin gói"
+                                                >
+                                                    <i className="fa-solid fa-pen-to-square mr-1.5 text-xs"></i>
+                                                    <span>Sửa</span>
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -761,6 +816,96 @@ export default function PackageView() {
                         <div className="flex justify-center space-x-3">
                             <button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 w-full cursor-pointer">Hủy bỏ</button>
                             <button onClick={confirmDelete} className="px-4 py-2 text-sm font-medium text-white bg-danger rounded-lg hover:bg-red-600 w-full cursor-pointer">Đồng ý Xóa</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Modal Xác nhận Mua Gói */}
+            <div className={`fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center transition-opacity duration-300 ${isBuyModalOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                <div className={`bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden transition-transform duration-300 ${isBuyModalOpen ? 'scale-100' : 'scale-95'}`}>
+                    {/* Header modal */}
+                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5 text-white flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-lg">
+                                <i className="fa-solid fa-cart-shopping"></i>
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold">Xác nhận mua gói</h3>
+                                <p className="text-xs text-blue-100">Đăng ký hoặc gia hạn gói cước cho doanh nghiệp</p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => !isBuying && setIsBuyModalOpen(false)}
+                            className="text-white/70 hover:text-white transition-colors cursor-pointer text-lg"
+                        >
+                            <i className="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    {/* Nội dung thông tin gói */}
+                    <div className="p-6 space-y-4">
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-slate-500 uppercase">Tên gói dịch vụ</span>
+                                <span className="text-sm font-bold text-slate-900">{buyingPackage?.name}</span>
+                            </div>
+                            <div className="flex items-center justify-between border-t border-slate-200/60 pt-2">
+                                <span className="text-xs font-medium text-slate-500 uppercase">Giá cước</span>
+                                <span className="text-lg font-extrabold text-blue-600">
+                                    {formatPrice(buyingPackage?.price)} <span className="text-xs font-normal text-slate-400">/ Tháng</span>
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between border-t border-slate-200/60 pt-2">
+                                <span className="text-xs font-medium text-slate-500 uppercase">Thời hạn</span>
+                                <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                    +30 ngày sử dụng
+                                </span>
+                            </div>
+                        </div>
+
+                        {buyingPackage?.description && (
+                            <div className="text-xs text-slate-500 bg-blue-50/50 border border-blue-100 rounded-lg p-3">
+                                <p className="font-semibold text-blue-800 mb-1 flex items-center">
+                                    <i className="fa-solid fa-circle-info mr-1.5 text-blue-500"></i> Mô tả gói:
+                                </p>
+                                <p className="leading-relaxed">{buyingPackage.description}</p>
+                            </div>
+                        )}
+
+                        <div className="text-xs text-slate-400">
+                            * Lưu ý: Nếu doanh nghiệp của bạn đang dùng gói này và còn hạn, thời hạn gói sẽ được tự động cộng dồn thêm 30 ngày.
+                        </div>
+
+                        {/* Nút hành động */}
+                        <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
+                            <button
+                                type="button"
+                                disabled={isBuying}
+                                onClick={() => setIsBuyModalOpen(false)}
+                                className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isBuying}
+                                onClick={confirmBuyPackage}
+                                className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.98] rounded-xl shadow-sm hover:shadow transition-all cursor-pointer flex items-center space-x-2"
+                            >
+                                {isBuying ? (
+                                    <>
+                                        <i className="fa-solid fa-circle-notch fa-spin text-sm"></i>
+                                        <span>Đang xử lý...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="fa-solid fa-check text-sm"></i>
+                                        <span>Xác nhận mua</span>
+                                    </>
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -23,6 +23,7 @@ import com.crm.BackendCrm.entity.CompanyPackage;
 import com.crm.BackendCrm.entity.Package;
 import com.crm.BackendCrm.entity.Permission;
 import com.crm.BackendCrm.repository.CompanyPackageRepository;
+import com.crm.BackendCrm.repository.CompanyRepository;
 import com.crm.BackendCrm.repository.PackageRepository;
 import com.crm.BackendCrm.repository.PermissionRepository;
 
@@ -35,6 +36,7 @@ public class PackageService {
     private final PermissionRepository permissionRepository;
     private final PermissionService permissionService;
     private final CompanyPackageRepository companyPackageRepository;
+    private final CompanyRepository companyRepository;
 
     public List<PackageResponseDTO> getAllPackage(){
         return packageRepository.findAll().stream().map(this::toDTO).collect(Collectors.toList());
@@ -57,38 +59,42 @@ public class PackageService {
             tree
         );
     }
-    private void createCompanyPackage(Long companyId, Long packageId){
-        Package pack = packageRepository.findById(packageId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy gói với id:"+packageId));
-        Company company = companyPackageRepository.findByCompany_Id(companyId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công ty với id:"+companyId));
+    private void createCompanyPackage(Company company, Package packInfo) {        
 
         CompanyPackage newCompanyPackage = new CompanyPackage();
         newCompanyPackage.setCompany(company);
-        newCompanyPackage.setPackInfo(pack);
+        newCompanyPackage.setPackInfo(packInfo);
         newCompanyPackage.setStartDate(LocalDate.now());
         newCompanyPackage.setEndDate(LocalDate.now().plusDays(30)); // Giả sử gói có thời hạn 30 ngày
         companyPackageRepository.save(newCompanyPackage);
     }
     public ResponseEntity buyPackage(Long companyId, Long packageId){
-        Package pack = packageRepository.findById(packageId)
+        System.out.println("PackageService: chuẩn bị mua gói");
+        Package packInfo = packageRepository.findById(packageId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy gói với id:"+packageId));
 
-        if (pack.getStatus() == false){
+        System.out.println("PackageService: Tim thấy gói: " + packInfo.getName());
+
+        if (packInfo.getStatus() == false){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy gói với id:"+packageId);
         }
-
+        System.out.println("PackageService: gói đủ điều kiện, tiếp tục: " + packInfo.getName());
         CompanyPackage packageInfo = companyPackageRepository.findTopByCompany_IdAndPackInfo_IdOrderByEndDateDesc(companyId, packageId)
         .orElse(null);
+        
+        Company company = companyRepository.findById(companyId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy công ty với id:"+companyId));
 
         if (packageInfo == null) {
-            createCompanyPackage(companyId, packageId);
+            System.out.println("PackageService: chuẩn bị tạo gói với điều kiện: "+ "companyName: " + company.getName() + ", packageName: " + packInfo.getName());
+            createCompanyPackage(company, packInfo);
+            return ResponseEntity.ok().build();
         }
 
         LocalDate expiredDate = packageInfo.getEndDate();
         // kiểm tra gói hết hạn chưa
         if (expiredDate.isBefore(LocalDate.now())){ // hết hạn rồi
-           createCompanyPackage(companyId, packageId); // mua mới
+           createCompanyPackage(company, packInfo); // mua mới
         }
         else{
             // gia hạn gói

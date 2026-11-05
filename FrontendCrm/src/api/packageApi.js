@@ -12,6 +12,9 @@ export const createPackage = (data) => axiosInstance.post("/packages", data);
 // Cập nhật gói (PUT /api/packages/{id})
 export const updatePackage = (id, data) => axiosInstance.put(`/packages/${id}`, data);
 
+// Mua gói (POST /api/packages/buy/{id})
+export const buyPackage = (id) => axiosInstance.post(`/packages/buy/${id}`);
+
 // Xóa gói (DELETE /api/packages/{id})
 export const deletePackage = (id) => axiosInstance.delete(`/packages/${id}`);
 

@@ -82,12 +82,14 @@ public class PackageController {
         }
         return packageService.getDetailPackage(id);
     }
-    @GetMapping("buy/{id}")
+    @RequestMapping(value = "buy/{id}", method = {org.springframework.web.bind.annotation.RequestMethod.GET, org.springframework.web.bind.annotation.RequestMethod.POST})
     public ResponseEntity buyPackage (@PathVariable Long id, @RequestHeader ("Authorization") String header) {
+        System.out.println("PackageController: chuẩn bị mua gói");
         // code chức năng mua gói ở đây
         Long userId = getUserIdByAuth(header);
         Long packageId = id;
         User user = userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        System.out.println("PackageController: User: " + user.getFullName());
         Long companyId = user.getCompany().getId();
         packageService.buyPackage(companyId, packageId);
         return ResponseEntity.ok().build();
