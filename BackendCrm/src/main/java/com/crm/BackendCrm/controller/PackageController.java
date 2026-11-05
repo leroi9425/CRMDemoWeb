@@ -86,11 +86,12 @@ public class PackageController {
     }
     
     @PostMapping("")
+    @PreAuthorize ("hasAuthority('THEM_GOI')")
     public PackageResponseDTO createPack(@Valid @RequestBody PackageRequestDTO pDto, @RequestHeader("Authorization") String header) {
-        Long userId = getUserIdByAuth(header);
-        if(!userService.isAdmin(userId)){
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "bạn không có quyền thực hiện lệnh này");
-        }
+        // Long userId = getUserIdByAuth(header);
+        // if(!userService.isAdmin(userId)){
+        //     throw new ResponseStatusException(HttpStatus.FORBIDDEN, "bạn không có quyền thực hiện lệnh này");
+        // }
         System.out.println("PackageController: chuẩn bị thêm quyền mới");
         return packageService.create(pDto);
     }
